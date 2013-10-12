@@ -1,6 +1,6 @@
 var requirejs = require('requirejs');
 //define = requirejs.define;
-requirejs([ '../build/jsoSchema', 'buster' ], function (s, buster) {
+requirejs([ '../build/requirejs/jso/Schema', 'buster' ], function (s, buster) {
 
     var valid   = function (value, schema) { buster.assert(s.validate(value, schema)); };
     var invalid = function (value, schema) { buster.refute(s.validate(value, schema)); };

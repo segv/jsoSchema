@@ -3,21 +3,23 @@ all: build/jquery.jsoSchema.js build/jsoSchema.js
 clean:
 	rm -rf build
 
-build/jquery.jsoSchema.js: jsoSchema.js
-	mkdir -p build
-	echo "(function (jQuery) { " > build/jquery.jsoSchema.js
-	cat ./jsoSchema.js >> build/jquery.jsoSchema.js
-	echo >> build/jquery.jsoSchema.js
-	echo "jQuery.fn.jsoSchema = jsoSchema.api;" >> build/jquery.jsoSchema.js
-	echo "})(jQuery);" >> build/jquery.jsoSchema.js
+build: build/jquery/jquery.jsoSchema.js
 
-build/jsoSchema.js: jsoSchema.js
-	mkdir -p build
-	echo "define([ ], function () { " >> build/jsoSchema.js
-	cat ./jsoSchema.js >> build/jsoSchema.js
-	echo >> build/jsoSchema.js
-	echo "return jsoSchema.api;" >> build/jsoSchema.js
-	echo "});" >> build/jsoSchema.js
+build/jquery/jquery.jsoSchema.js: jsoSchema.js
+	mkdir -p build/jquery
+	echo "(function (jQuery) { " > $@
+	cat ./jsoSchema.js >> $@
+	echo >> $@
+	echo "jQuery.fn.jsoSchema = jsoSchema;" >> $@
+	echo "})(jQuery);" >> $@
 
-test: clean build/jsoSchema.js
+build/requirejs/jso/Schema.js: jsoSchema.js
+	mkdir -p build/requirejs/jso
+	echo "define([ ], function () { " >> $@
+	cat ./jsoSchema.js >> $@
+	echo >> $@
+	echo "return jsoSchema;" >> $@
+	echo "});" >> $@
+
+test: clean build/requirejs/jso/Schema.js
 	nodejs ./test/test.js
