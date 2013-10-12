@@ -9,42 +9,37 @@ var jsoSchema = (function () {
 
     var s = { };
 
-    /** @typedef {function(*, continuation)} */
-    var validator;
-
     /**
      * Short circuiting and.
      *
-     * @nosideeffects
-     * @param {Array.<jsoSchema.validator>} conditions
+     * @param {Array.<validator>} conditions
      * @return {validator}
      */
-    s.Every = function Every (conditions) {
+    function Every (conditions) {
         if (conditions.length == 0) {
             return function (value, p, f) { return p(); };
         } else {
             return function (value, p, f) {
                 return conditions[0](value,
                                      function () { 
-                                         return s.Every(conditions.slice(1))(value, p, f); 
+                                         return Every(conditions.slice(1))(value, p, f); 
                                      },
                                      f);
             };
         }
     };
 
-    s.And = function And (a, b) {
-        return s.Every([a,b]);
+    function And (a, b) {
+        return Every([a,b]);
     };
 
     /**
      * Short circuiting or
      *
-     * @nosideeffects
      * @param {Array.<validator>} conditions
      * @return {validator}
      */
-    s.Any = function Any (conditions) {
+    function Any (conditions) {
         if (conditions.length == 0) {
             return function (value, p, f) {
                 return f("Testing ", value, "against an empty Any list");
@@ -56,7 +51,7 @@ var jsoSchema = (function () {
                                          return p();
                                      },
                                      function () {
-                                         return s.Any(conditions.slice(1))(value, p, f);
+                                         return Any(conditions.slice(1))(value, p, f);
                                      });
             };
         }
@@ -65,17 +60,16 @@ var jsoSchema = (function () {
     /**
      * 2 argument Any
      *
-     * @nosideeffects
      * @param {validator} a
      * @param {validator} b
      * @return {validator}
      */
-    s.Or = function Or (a, b) {
-        return s.Any([ a, b ]); 
+    function Or (a, b) {
+        return Any([ a, b ]); 
     };
 
-    s.If = function If (condition, then, els) {
-        return s.Or(s.And(condition, then), els);
+    function If (condition, then, els) {
+        return Or(And(condition, then), els);
     };
 
     /** 
@@ -83,7 +77,7 @@ var jsoSchema = (function () {
      * @param {function(*):boolean} valueCheck
      * @return {validator}
      */
-    s.Condition = function Condition (valueCheck) {
+    function Condition (valueCheck) {
         return function(value, p, f) {
             return valueCheck(value) ? p() : f(value, " did not return true from ", valueCheck);
         };
@@ -113,107 +107,96 @@ var jsoSchema = (function () {
     };
 
     /**
-     * @nosideeffects
-     * @param {typeName} string
+     * @param {string} typeName
      * @return {validator}
      */
-    s.OfType = function OfType (typeName) {
-        return s.Condition(function (value) { return typeOf(value) == typeName; });
+    function OfType (typeName) {
+        return Condition(function (value) { return typeOf(value) == typeName; });
     };
 
     /**
-     * @nosideeffects
      * @return {validator}
      */
-    s.Number = function Number () {
-        return s.OfType("number");
+    function Number () {
+        return OfType("number");
     };
 
     /**
-     * @nosideeffects
      * @param {number} lowerBound
      * @return {validator}
      */
-    s.GreaterThan = function GreaterThan (lowerBound) {
-        return s.And(s.Number(), s.Condition(function (value) { return lowerBound < value; }));
+    function GreaterThan (lowerBound) {
+        return And(Number(), Condition(function (/**number*/ value) { return lowerBound < value; }));
     };
 
     /**
-     * @nosideeffects
      * @param {number} lowerBound
      * @return {validator}
      */
-    s.GreaterThanEqual = function GreaterThanEqual (lowerBound) {
-        return s.And(s.Number(), s.Condition(function (value) { return lowerBound <= value; }));
+    function GreaterThanEqual (lowerBound) {
+        return And(Number(), Condition(function (/**number*/value) { return lowerBound <= value; }));
     };
 
     /**
-     * @nosideeffects
      * @param {number} upperBound
      * @return {validator}
      */
-    s.LessThan = function LessThan (upperBound) {
-        return s.And(s.Number(), s.Condition(function (value) { return value < upperBound; }));
+    function LessThan (upperBound) {
+        return And(Number(), Condition(function (/**number*/value) { return value < upperBound; }));
     };
 
     /**
-     * @nosideeffects
      * @param {number} upperBound
      * @return {validator}
      */
-    s.LessThanEqual = function LessThanEqual (upperBound) {
-        return s.And(s.Number(), s.Condition(function (value) { return value <= upperBound; }));
+    function LessThanEqual (upperBound) {
+        return And(Number(), Condition(function (/**number*/value) { return value <= upperBound; }));
     };
 
     /**
-     * @nosideeffects
      * @return {validator}
      */
-    s.String = function String () {
-        return s.OfType("string");
+    function String () {
+        return OfType("string");
     };
 
     /**
-     * @nosideeffects
      * @return {validator}
      */
-    s.Boolean = function Boolean () {
-        return s.OfType("boolean");
+    function Boolean () {
+        return OfType("boolean");
     };
 
     /**
-     * @nosideeffects
      * @param {string|RegExp} re
      * @return {validator}
      */
-    s.RegExp = function RegExp (re) {
+    function Test (re) {
         if (typeOf(re) == "string") {
             re = new RegExp(re);
         }
-        return s.And(s.String(), s.Condition(function (value) { return re.exec(value) != null; }));
+        return And(String(), Condition(function (value) { return re.exec(value) != null; }));
     };
 
     /**
-     * @nosideeffects
      * @param {Array.<*>} values
      * @return {validator}
      */
-    s.Enum = function Enum (values) {
+    function Enum (values) {
         var set = { };
         var i;
         for (i = 0; i < values.length; i++) {
             set[values[i]] = true;
         }
-        return s.Condition(function (value) { return set.hasOwnProperty(value); });
+        return Condition(function (value) { return set.hasOwnProperty(value); });
     };
 
     /**
-     * @nosideeffects
      * @param {*} value
      * @return {validator}
      */
-    s.Constant = function Constant (value) {
-        return s.Condition(function (v) { return v == value; });
+    function Constant (value) {
+        return Condition(function (v) { return v == value; });
     };
 
     var check_one_required_property = function(spec,
@@ -317,34 +300,35 @@ var jsoSchema = (function () {
         }
     };
 
-    s.Object = function Object (spec) {
+    function Object (spec) {
         return function (value, p, f) {
+            spec = { required_properties: spec['required_properties'] || { },
+                     optional_properties: spec['optional_properties'] || { },
+                     allow_other_properties: typeOf(spec['allow_other_properties']) == "undefined" ? true : spec['allow_other_properties'] };
             object_schema_loop(spec,
-                               spec.required_properties || { },
-                               spec.optional_properties || { },
-                               typeOf(spec.allow_other_properties) == "undefined" ? true : spec.allow_other_properties,
+                               spec.required_properties,
+                               spec.optional_properties,
+                               spec.allow_other_properties,
                                value,
                                p,
                                f);
         };
     };
 
-    s.Record = function Record (required_properties) {
-        return s.Object({ required_properties: required_properties, 
-                          optional_properties: { } });
+    function Record (required_properties) {
+        return Object({ required_properties: required_properties, 
+                        allow_other_properties: false });
     };
 
-    s.HashTable = function HashTable () {
-        return s.Object({ required_properties: { }, 
-                          optional_properties: { },
-                          allow_other_properties: true });
+    function HashTable () {
+        return Object({ allow_other_properties: true });
     };
 
     /**
-     * @param {s.validator} item_validator
-     * @return {s.validator}
+     * @param {validator} item_validator
+     * @return {validator}
      */
-    s.Array = function Array (item_validator) {
+    function Array (item_validator) {
         if (arguments.length == 0) {
             throw new Error("Missing required argument item_validator");
         }
@@ -369,14 +353,14 @@ var jsoSchema = (function () {
         };
     };
 
-    s.Nullable = function Nullable (validator) {
-        return s.Or(s.Constant(null), validator);
+    function Nullable (validator) {
+        return Or(Constant(null), validator);
     };
 
-    s.Pass = function Pass () { return function (value,p,f) { return p(); }; };
-    s.Fail = function Fail () { var message = [].concat(arguments); return function (value,p,f) { return f.apply(f, message); }; };
+    function Pass () { return function (value,p,f) { return p(); }; };
+    function Fail () { var message = [].concat(arguments); return function (value,p,f) { return f.apply(f, message); }; };
 
-    s.violatesSchema = function violatesSchema (value, schema) {
+    function violatesSchema (value, schema) {
         var error = undefined;
         var ok = false;
         schema(value,
@@ -386,10 +370,35 @@ var jsoSchema = (function () {
         return ok ? false : error;
     };
 
-    s.validate = function validate (value, schema) {
-        return s.violatesSchema(value, schema) == false ? true : false;
+    function validate (value, schema) {
+        return violatesSchema(value, schema) == false ? true : false;
     };
 
-    return s;
-
+    return { 'Every': Every,
+             'And':   And,
+             'Any':   Any,
+             'Or':    Or,
+             'If':    If,
+             'OfType': OfType,
+             'Condition': Condition,
+             'Number': Number,
+             'GreaterThan': GreaterThan,
+             'GreaterThanEqual': GreaterThanEqual,
+             'LessThan': LessThan,
+             'LessThanEqual': LessThanEqual,
+             'String': String,
+             'Boolean': Boolean,
+             'Test': Test,
+             'Enum': Enum,
+             'Constant': Constant,
+             'Object': Object,
+             'Record': Record,
+             'HashTable': HashTable,
+             'Array': Array,
+             'Nullable': Nullable,
+             'Pass': Pass,
+             'Fail': Fail,
+             'violatesSchema': violatesSchema,
+             'validate': validate
+           };
 })();
