@@ -1,6 +1,6 @@
 var requirejs = require('requirejs');
 //define = requirejs.define;
-requirejs([ '../build/requirejs/jso/Schema', 'buster' ], function (s, buster) {
+requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
 
     var valid   = function (value, schema) { buster.assert(s.validate(value, schema)); };
     var invalid = function (value, schema) { buster.refute(s.validate(value, schema)); };
@@ -44,8 +44,9 @@ requirejs([ '../build/requirejs/jso/Schema', 'buster' ], function (s, buster) {
             valid("A", s.String());
             invalid(0, s.String());
             valid(typeof(0), s.String());
+            valid("aaab", s.Test("^a+b+$"));
         },
-        "oftype": function () {
+        "ofType": function () {
             valid("", s.OfType("string"));
             invalid("", s.OfType("object"));
             invalid(s, s.OfType("number"));
@@ -53,12 +54,42 @@ requirejs([ '../build/requirejs/jso/Schema', 'buster' ], function (s, buster) {
             valid(s, s.OfType("object"));
             valid(s.OfType, s.OfType("function"));
             valid(undefined, s.OfType("undefined"));
+            valid({}['foo'], s.OfType("undefined"));
         },
         "constant": function () {
             valid(1, s.Constant(1));
         },
         "and": function () {
+            valid(undefined, s.And(s.Pass(), s.Pass()));
+            invalid(undefined, s.And(s.Pass(), s.Fail()));
+            invalid(undefined, s.And(s.Fail(), s.Fail()));
+
             valid(1, s.And(s.Constant(1), s.Constant(1)));
+            valid(1, s.And(s.LessThan(2), s.GreaterThan(0)));
+        },
+        "or": function () {
+            valid(undefined, s.Or(s.Pass(), s.Pass()));
+            valid(undefined, s.Or(s.Fail(), s.Pass()));
+            invalid(undefined, s.Or(s.Fail(), s.Fail()));
+            valid(1, s.Or(s.Constant(0), s.Constant(1)));
+            valid(1, s.Or(s.LessThan(0), s.GreaterThan(0)));
+        },
+        "record": function () {
+            valid({ a: 42 }, s.Record({ a: s.Number() }));
+        },
+        "nested conditions": function () {
+            valid(1, s.Or(s.And(s.GreaterThan(0),
+                                s.GreaterThan(1)),
+                          s.And(s.LessThan(2),
+                                s.GreaterThan(0))));
+
+            var validator = s.Or(s.And(s.Object({ required_properties: { v: s.Constant(1) } }),
+                                       s.Record({ v: s.Constant(1), a: s.Constant(3) })),
+                                 s.And(s.Object({ required_properties: { v: s.Constant(2) } }),
+                                       s.Record({ v: s.Constant(1), b: s.String() })));
+
+            valid({ v: 1, a: 3 }, validator);
+            valid({ v: 2, b: "3" }, validator);                               
         }
     });
 });
