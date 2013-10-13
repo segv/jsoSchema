@@ -44,7 +44,10 @@ $(MIN)/jquery.jsoSchema.js: build/raw/jquery.jsoSchema.js build/compiler.jar
 compile: $(MIN)/jso/Schema.js $(MIN)/jquery.jsoSchema.js
 
 clean:
-	rm -rf build node_modules
+	rm -rf build/min build/raw build/README.html
+
+distclean:
+	rm -rf node_modules build
 
 build/README.html: README.asciidoc
 	mkdir -p $(dir $@)
