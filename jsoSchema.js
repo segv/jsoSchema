@@ -156,6 +156,13 @@ var jsoSchema = (function () {
     /**
      * @return {validator}
      */
+    function Integer () {
+        return And(Number(), Condition(function (/**number*/value) { return value % 1 == 0; }));
+    };
+
+    /**
+     * @return {validator}
+     */
     function String () {
         return OfType("string");
     };
@@ -382,6 +389,7 @@ var jsoSchema = (function () {
              'OfType': OfType,
              'Condition': Condition,
              'Number': Number,
+             'Integer': Integer,
              'GreaterThan': GreaterThan,
              'GreaterThanEqual': GreaterThanEqual,
              'LessThan': LessThan,
