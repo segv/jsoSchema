@@ -96,6 +96,14 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
 
             valid({ v: 1, a: 3 }, validator);
             valid({ v: 2, b: "3" }, validator);                               
+        },
+        "enum": function () {
+            invalid("FOO", s.Enum([ "A", "B", "C" ]));
+            invalid("FOO", s.OneOf("A", "B", "C"));
+            valid("B", s.Enum([ "A", "B", "C" ]));
+            valid("C", s.OneOf("A", "B", "C"));
+            valid("C", s.OneOf("C"));
+            invalid("C", s.OneOf());
         }
     });
 });
