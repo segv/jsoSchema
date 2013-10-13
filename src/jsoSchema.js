@@ -281,7 +281,7 @@ var jsoSchema = (function () {
                   });
               });
 
-        var allow_other_properties = typeOf(spec.allow_other_properties) == "undefined" ? true : spec.allow_other_properties;
+        var allow_other_properties = typeOf(spec.allow_other_properties) === "undefined" ? true : spec.allow_other_properties;
         if (! allow_other_properties) {
             conditions.push(Condition(function (value) {
                 var value_properties = { };
