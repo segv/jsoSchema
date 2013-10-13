@@ -10,7 +10,7 @@ $(RAW)/jquery.jsoSchema.js: $(SRC)/jsoSchema.js
 	echo "(function (jQuery) { " > $@
 	cat $< >> $@
 	echo >> $@
-	echo "jQuery.fn.jsoSchema = jsoSchema;" >> $@
+	echo "jQuery.fn['jsoSchema'] = jsoSchema;" >> $@
 	echo "})(jQuery);" >> $@
 
 $(RAW)/jso/Schema.js: $(SRC)/jsoSchema.js
