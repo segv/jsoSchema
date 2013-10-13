@@ -31,7 +31,6 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
             valid(-1, s.Integer());
             valid(1, s.Integer());
             valid(Number.MAX_VALUE, s.Integer());
-            valid(Number.MIN_VALUE, s.Integer());
         },
         "array": function () {
             valid([ 1 ], s.Array(s.Number()));
