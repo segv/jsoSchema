@@ -104,6 +104,13 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
             valid("C", s.OneOf("A", "B", "C"));
             valid("C", s.OneOf("C"));
             invalid("C", s.OneOf());
+        },
+        "tuple": function () {
+            valid([1,2], s.Tuple(s.Number(),s.Number()));
+            invalid([1], s.Tuple(s.Number(),s.Number()));
+            invalid([1,2,3], s.Tuple(s.Number(),s.Number()));
+            invalid([1,"2"], s.Tuple(s.Number(),s.Number()));
+            invalid({}, s.Tuple(s.Number(),s.Number()));
         }
     });
 });
