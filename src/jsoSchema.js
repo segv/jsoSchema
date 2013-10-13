@@ -16,7 +16,45 @@
 
 var jsoSchema = (function () {
 
-    var s = { };
+    /**
+     * Return true if @param{schema} accepts @param{value}
+     *
+     * @param {*} value
+     * @param {validator} schema
+     * @return boolean
+     */
+    function validate (value, schema) {
+        return violatesSchema(value, schema) == false ? true : false;
+    };
+
+    /**
+     * Return the errors (probably only one) encountered while
+     * test @param{value} against @param{schema}. Returns false if no
+     * errors occured.
+     *
+     * @param {*} value
+     * @param {validator} schema
+     * @return (false|{value,schema,message})
+     */
+    function violatesSchema (value, schema) {
+        var error = undefined;
+        var ok = false;
+        schema(value,
+               function () { ok = true; },
+               function () { error = { 'value': value, 'schema': schema, 'message': [].concat(arguments) }; });
+
+        return ok ? false : error;
+    };
+
+    /**
+     * Short circuiting and.
+     *
+     * @param {...validator} conditions
+     * @return {validator}
+     */
+    function And (conditions) {
+        return Every(copyArray(arguments));
+    };
 
     /**
      * Short circuiting and.
@@ -40,13 +78,13 @@ var jsoSchema = (function () {
     };
 
     /**
-     * Short circuiting and.
+     * 2 argument Any
      *
      * @param {...validator} conditions
      * @return {validator}
      */
-    function And (conditions) {
-        return Every(copyArray(arguments));
+    function Or (conditions) {
+        return Any(copyArray(arguments)); 
     };
 
     /**
@@ -70,16 +108,6 @@ var jsoSchema = (function () {
         };
     };
 
-    /**
-     * 2 argument Any
-     *
-     * @param {...validator} conditions
-     * @return {validator}
-     */
-    function Or (conditions) {
-        return Any(copyArray(arguments)); 
-    };
-
     function If (condition, then, els) {
         return Or(And(condition, then), els);
     };
@@ -93,10 +121,6 @@ var jsoSchema = (function () {
         return function(value, p, f) {
             return valueCheck(value) ? p() : f(value, " did not return true from ", valueCheck);
         };
-    };
-
-    function copyArray (array) {
-        return [].slice.call(array, 0);
     };
     
     /**
@@ -272,21 +296,6 @@ var jsoSchema = (function () {
                                f);
     };
 
-    var forIn = function (o, callback) {
-        var value;
-        for (value in o) {
-            if (o.hasOwnProperty(value)) {
-                callback(o[value], value);
-            }
-        }
-    };
-
-    var keys = function (o) {
-        var k = [ ];
-        forIn(o, function (value, key) { k.push(key); });
-        return k;
-    };
-
     var check_extra_properties = function (spec,
                                            required_properties, optional_properties, allow_other_properties,
                                            value, p, f) {
@@ -417,24 +426,29 @@ var jsoSchema = (function () {
     };
 
     function Fail () { 
-        var message = [].concat(arguments); 
+        var message = copyArray(arguments); 
         return function (value,p,f) { 
             return f.apply(f, message); 
         }; 
     };
 
-    function violatesSchema (value, schema) {
-        var error = undefined;
-        var ok = false;
-        schema(value,
-               function () { ok = true; },
-               function () { error = { 'value': value, 'schema': schema, 'message': [].concat(arguments) }; });
-
-        return ok ? false : error;
+    function copyArray (array) {
+        return [].slice.call(array, 0);
     };
 
-    function validate (value, schema) {
-        return violatesSchema(value, schema) == false ? true : false;
+    function forIn (o, callback) {
+        var value;
+        for (value in o) {
+            if (o.hasOwnProperty(value)) {
+                callback(o[value], value);
+            }
+        }
+    };
+
+    function keys (o) {
+        var k = [ ];
+        forIn(o, function (value, key) { k.push(key); });
+        return k;
     };
 
     return { 'Every': Every,
