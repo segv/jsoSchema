@@ -78,18 +78,10 @@ variable). Here's what it would actually look like using requirejs:
 [source,javascript]
 ----
   require([ 'jso/Schema.js' ], function (s) {
-    // first define our schema:
-    var schema = s.Record({ name: s.String(),
-                            address: s.Array(s.String()),
-                            age: s.And(s.Integer(), s.GreaterThanEquals(25)) });
-    // now use it:
-    doXhrCall().then(function(data) {
-      if (! schema.valid(data)) {
-        errorBadData();
-      } else {
-        ...
-      }
-    });
+    var schema = s.Array(/* ... */);
+    // ...
+    if (! schema.valid(data)) { /* .... */ }
+    // ...
   });
 ----
 
@@ -99,17 +91,11 @@ and with jquery:
 ----
   (function ($) {
     var s = jQuery.fn.jsoSchema;
-    // first define our schema:
-    var schema = s.Record({ name: s.String(),
-                            address: s.Array(s.String()),
-                            age: s.And(s.Integer(), s.GreaterThanEquals(25)) });
-    $.post("/the/url/").done(function (data) {
-      if (! schema.valid(data)) {
-        errorBadData();
-      } else {
-        ...
-      }
-    });
+    // ...
+    var schema = s.Record(/* ... */);
+    // ...
+    if (! schema.valid(data)) { errorBadData(); } 
+    // ...
   })(jQuery);
 ----
 
@@ -127,7 +113,7 @@ OfType(typeName)::
   Checks that the given values's +typeof+ is +==+ to +typeName+
 Constant(value)::
   Checks that the given value is +===+ to +value+.E
-num(...values)::
+Enum(...values)::
   Checks that the given value is one of elements of +values+ (as per +===+). This is simply a convenience around OneOf.
 OneOf(values)::
   Checks that the given value is one of elements of +values+ (as per +===+). 
