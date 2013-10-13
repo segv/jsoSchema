@@ -352,31 +352,34 @@ var jsoSchema = (function () {
 
     /**
      * @param {validator} item_validator
+     * @param {validator=} length_validator
      * @return {validator}
      */
-    function Array (item_validator) {
+    function Array (item_validator, length_validator) {
         if (arguments.length == 0) {
             throw new Error("Missing required argument item_validator");
         }
-        return function (value, p, f) {
-            var loop = function (index, p, f) {
-                if (index == value.length) {
-                    return p();
-                } else {
-                    return item_validator(value[index],
-                                          function () {
-                                              return loop(index + 1, p, f);
-                                          },
-                                          f);
-                }
-            };
-
-            if (typeOf(value) == 'array') {
-                return loop(0, p, f);
-            } else {
-                return f(value, "is not an array.");
-            }
-        };
+        if (typeOf(length_validator) == "undefined") {
+            length_validator = Pass();
+        }
+        return And(OfType("array"),
+                   function (value, p, f) {
+                       length_validator(value.length, p, f);
+                   },
+                   function (value, p, f) {
+                       var loop = function (index) {
+                           if (index == value.length) {
+                               p();
+                           } else {
+                               item_validator(value[index],
+                                              function () {
+                                                  loop(index + 1);
+                                              },
+                                              f);
+                           }
+                       };
+                       loop(0);
+                   });
     };
 
     function Tuple (items) {

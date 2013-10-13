@@ -43,6 +43,16 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
             valid(new Array(), s.Array(s.Pass()));
             valid([1,2,3], s.Array(s.Number()));
             valid((function () { return [].slice.call(arguments); })(1,2,3), s.Array(s.Number()));
+
+            var digit_list = s.Array(s.Or(s.Number(), s.Test(/^\d+$/)),
+                                     s.GreaterThan(0));
+
+            valid([1], digit_list);
+            valid([1,"2",3], digit_list);
+            valid([1,2,3,4], digit_list);
+            invalid([1,{},3,4], digit_list);
+            invalid([], digit_list);
+            invalid({ 2: undefined }, digit_list);
             
         },
         "string": function () {
