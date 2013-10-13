@@ -102,7 +102,7 @@ var jsoSchema = (function () {
      * @param {*} value
      * @return {string}
      */
-    var typeOf = function typeOf(value) {
+    function typeOf(value) {
         var s = typeof value;
         if (s === 'object') {
             if (value) {
@@ -213,7 +213,7 @@ var jsoSchema = (function () {
      * @return {validator}
      */
     function OneOf (var_args) {
-        return Enum([].slice.call(arguments, 0));
+        return Enum(copyArray(arguments));
     };
 
 
@@ -379,6 +379,27 @@ var jsoSchema = (function () {
         };
     };
 
+    function Tuple (items) {
+        items = copyArray(arguments);
+        return And(OfType("array"),
+                   function (value, p, f) {
+                       if (items.length != value.length) {
+                           f("Wrong number f elements in tuple",value,"expected",items.length);
+                       } else {
+                           var loop = function (index) {
+                               if (value.length == index) {
+                                   p();
+                               } else {
+                                   items[index](value[index],
+                                                function () { loop(index + 1); },
+                                                f);
+                               }
+                           };
+                           loop(0);
+                       };
+                   });
+    };
+
     function Nullable (validator) {
         return Or(Constant(null), validator);
     };
@@ -423,6 +444,7 @@ var jsoSchema = (function () {
              'Record': Record,
              'HashTable': HashTable,
              'Array': Array,
+             'Tuple': Tuple,
              'Nullable': Nullable,
              'Pass': Pass,
              'Fail': Fail,
