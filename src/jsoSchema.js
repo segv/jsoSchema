@@ -25,17 +25,18 @@ var jsoSchema = (function () {
      * @return {validator}
      */
     function Every (conditions) {
-        if (conditions.length == 0) {
-            return function (value, p, f) { return p(); };
-        } else {
-            return function (value, p, f) {
-                return conditions[0](value,
-                                     function () { 
-                                         return Every(conditions.slice(1))(value, p, f); 
-                                     },
-                                     f);
+        return function (value, p, f) {
+            var loop = function (index) {
+                if (index == conditions.length) {
+                    p();
+                } else {
+                    conditions[index](value,
+                                      function () { loop(index + 1); },
+                                      f);
+                }
             };
-        }
+            loop(0);
+        };
     };
 
     /**
@@ -55,21 +56,18 @@ var jsoSchema = (function () {
      * @return {validator}
      */
     function Any (conditions) {
-        if (conditions.length == 0) {
-            return function (value, p, f) {
-                return f("Testing ", value, "against an empty Any list");
+        return function (value, p, f) {
+            var loop = function (index) {
+                if (index == conditions.length) {
+                    f();
+                } else {
+                    conditions[index](value,
+                                      p,
+                                      function () { loop(1 + index); });
+                }
             };
-        } else {
-            return function (value, p, f) {
-                return conditions[0](value,
-                                     function () {
-                                         return p();
-                                     },
-                                     function () {
-                                         return Any(conditions.slice(1))(value, p, f);
-                                     });
-            };
-        }
+            loop(0);
+        };
     };
 
     /**
@@ -96,7 +94,6 @@ var jsoSchema = (function () {
             return valueCheck(value) ? p() : f(value, " did not return true from ", valueCheck);
         };
     };
-
 
     function copyArray (array) {
         return [].slice.call(array, 0);
@@ -224,7 +221,6 @@ var jsoSchema = (function () {
     function Enum (var_args) {
         return OneOf(copyArray(arguments));
     };
-
 
     /**
      * @param {*} value
@@ -416,8 +412,16 @@ var jsoSchema = (function () {
         return Or(Constant(null), validator);
     };
 
-    function Pass () { return function (value,p,f) { return p(); }; };
-    function Fail () { var message = [].concat(arguments); return function (value,p,f) { return f.apply(f, message); }; };
+    function Pass () { 
+        return function (value,p,f) { return p(); }; 
+    };
+
+    function Fail () { 
+        var message = [].concat(arguments); 
+        return function (value,p,f) { 
+            return f.apply(f, message); 
+        }; 
+    };
 
     function violatesSchema (value, schema) {
         var error = undefined;
