@@ -20,7 +20,7 @@ var jsoSchema = (function () {
      * Return true if @param{schema} accepts @param{value}
      *
      * @param {*} value
-     * @param {validator} schema
+     * @param {schema} schema
      * @return boolean
      */
     function validate (value, schema) {
@@ -33,7 +33,7 @@ var jsoSchema = (function () {
      * errors occured.
      *
      * @param {*} value
-     * @param {validator} schema
+     * @param {schema} schema
      * @return (false|{value,schema,message})
      */
     function violatesSchema (value, schema) {
@@ -49,8 +49,8 @@ var jsoSchema = (function () {
     /**
      * Short circuiting and.
      *
-     * @param {...validator} conditions
-     * @return {validator}
+     * @param {...schema} conditions
+     * @return {schema}
      */
     function And (conditions) {
         return Every(copyArray(arguments));
@@ -59,8 +59,8 @@ var jsoSchema = (function () {
     /**
      * Short circuiting and.
      *
-     * @param {Array.<validator>} conditions
-     * @return {validator}
+     * @param {Array.<schema>} conditions
+     * @return {schema}
      */
     function Every (conditions) {
         return function (value, p, f) {
@@ -80,8 +80,8 @@ var jsoSchema = (function () {
     /**
      * 2 argument Any
      *
-     * @param {...validator} conditions
-     * @return {validator}
+     * @param {...schema} conditions
+     * @return {schema}
      */
     function Or (conditions) {
         return Any(copyArray(arguments)); 
@@ -90,8 +90,8 @@ var jsoSchema = (function () {
     /**
      * Short circuiting or
      *
-     * @param {Array.<validator>} conditions
-     * @return {validator}
+     * @param {Array.<schema>} conditions
+     * @return {schema}
      */
     function Any (conditions) {
         return function (value, p, f) {
@@ -115,7 +115,7 @@ var jsoSchema = (function () {
     /** 
      * Helper function for simple tests
      * @param {function(*):boolean} valueCheck
-     * @return {validator}
+     * @return {schema}
      */
     function Condition (valueCheck) {
         return function(value, p, f) {
@@ -148,14 +148,14 @@ var jsoSchema = (function () {
 
     /**
      * @param {string} typeName
-     * @return {validator}
+     * @return {schema}
      */
     function OfType (typeName) {
         return Condition(function (value) { return typeOf(value) == typeName; });
     };
 
     /**
-     * @return {validator}
+     * @return {schema}
      */
     function Number () {
         return OfType("number");
@@ -163,7 +163,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {number} lowerBound
-     * @return {validator}
+     * @return {schema}
      */
     function GreaterThan (lowerBound) {
         return And(Number(), Condition(function (/**number*/ value) { return lowerBound < value; }));
@@ -171,7 +171,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {number} lowerBound
-     * @return {validator}
+     * @return {schema}
      */
     function GreaterThanEqual (lowerBound) {
         return And(Number(), Condition(function (/**number*/value) { return lowerBound <= value; }));
@@ -179,7 +179,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {number} upperBound
-     * @return {validator}
+     * @return {schema}
      */
     function LessThan (upperBound) {
         return And(Number(), Condition(function (/**number*/value) { return value < upperBound; }));
@@ -187,28 +187,28 @@ var jsoSchema = (function () {
 
     /**
      * @param {number} upperBound
-     * @return {validator}
+     * @return {schema}
      */
     function LessThanEqual (upperBound) {
         return And(Number(), Condition(function (/**number*/value) { return value <= upperBound; }));
     };
 
     /**
-     * @return {validator}
+     * @return {schema}
      */
     function Integer () {
         return And(Number(), Condition(function (/**number*/value) { return value % 1 == 0; }));
     };
 
     /**
-     * @return {validator}
+     * @return {schema}
      */
     function String () {
         return OfType("string");
     };
 
     /**
-     * @return {validator}
+     * @return {schema}
      */
     function Boolean () {
         return OfType("boolean");
@@ -216,7 +216,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {string|RegExp} re
-     * @return {validator}
+     * @return {schema}
      */
     function Test (re) {
         if (typeOf(re) == "string") {
@@ -227,7 +227,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {Array.<*>} values
-     * @return {validator}
+     * @return {schema}
      */
     function OneOf (values) {
         var set = { };
@@ -240,7 +240,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {...*} var_args
-     * @return {validator}
+     * @return {schema}
      */
     function Enum (var_args) {
         return OneOf(copyArray(arguments));
@@ -248,7 +248,7 @@ var jsoSchema = (function () {
 
     /**
      * @param {*} value
-     * @return {validator}
+     * @return {schema}
      */
     function Constant (value) {
         return Condition(function (v) { return v === value; });
@@ -365,27 +365,27 @@ var jsoSchema = (function () {
     };
 
     /**
-     * @param {validator} item_validator
-     * @param {validator=} length_validator
-     * @return {validator}
+     * @param {schema} item_schema
+     * @param {schema=} length_schema
+     * @return {schema}
      */
-    function Array (item_validator, length_validator) {
+    function Array (item_schema, length_schema) {
         if (arguments.length == 0) {
-            throw new Error("Missing required argument item_validator");
+            throw new Error("Missing required argument item_schema");
         }
-        if (typeOf(length_validator) == "undefined") {
-            length_validator = Pass();
+        if (typeOf(length_schema) == "undefined") {
+            length_schema = Pass();
         }
         return And(OfType("array"),
                    function (value, p, f) {
-                       length_validator(value.length, p, f);
+                       length_schema(value.length, p, f);
                    },
                    function (value, p, f) {
                        var loop = function (index) {
                            if (index == value.length) {
                                p();
                            } else {
-                               item_validator(value[index],
+                               item_schema(value[index],
                                               function () {
                                                   loop(index + 1);
                                               },
@@ -417,8 +417,8 @@ var jsoSchema = (function () {
                    });
     };
 
-    function Nullable (validator) {
-        return Or(Constant(null), validator);
+    function Nullable (schema) {
+        return Or(Constant(null), schema);
     };
 
     function Pass () { 
