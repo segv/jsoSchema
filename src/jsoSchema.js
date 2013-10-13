@@ -424,7 +424,7 @@ var jsoSchema = (function () {
         var ok = false;
         schema(value,
                function () { ok = true; },
-               function () { error = { value: value, schema: schema, message: [].concat(arguments) }; });
+               function () { error = { 'value': value, 'schema': schema, 'message': [].concat(arguments) }; });
 
         return ok ? false : error;
     };
