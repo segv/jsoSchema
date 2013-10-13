@@ -1,69 +1,77 @@
-jsoSchema is a schema language and validation library for javascript
-data, or you coudl call it json schema, that wouldn't be wrong.
+jsoSchema
+===========
+Marco Baringer <mb@bese.it>
+
+jsoSchema is a schema language and validator for javascript objects
+(JSON objects being a very common subset of javascript objects).
 
 == Installation ==
 
-We provide, in the built branch, minified version of jsoSchema for
-jquery and requirejs (dojo/node):
+How many ways are there to install, compile and deploy js code? too
+many; and I have no desire to try and keep up with them
+all. Considering that, the code itself is exactly one file of
+javascript:
 
-- https://raw.github.com/segv/jsoSchema/0.9/build/raw/jquery.jsoSchema.js[jquery]
-- https://raw.github.com/segv/jsoSchema/0.9/build/raw/jso/Schema[requirejs]
-- https://raw.github.com/segv/jsoSchema/0.9/build/min/jquery.jsoSchema.js[jquery, minified]
-- https://raw.github.com/segv/jsoSchema/0.9/build/min/jso/Schema.js[requirejs, minified]
+https://raw.github.com/segv/jsoSchema/master/src/jsoSchema.js
 
-== Introduction ==
+which exposes a single global variable, jsoSchema, with all the
+neccessary functions and variables as properties on that object. Feel
+free, and it is in infact what i'd suggest, to just copy that file
+into your own code base.
 
-A jsoSchema schema is an object, in particular a function, which takes
-as input a javascript object (usually the result of json parsing) and
-tells you if the object meets certain conditions.
+That said, you can get versions of jsoSchema designed to work with
+jquery,
+https://raw.github.com/segv/jsoSchema/0.9/build/raw/jquery.jsoSchema.js[jquery.jsoSchema.js]
+(https://raw.github.com/segv/jsoSchema/0.9/build/min/jquery.jsoSchema.js[minified]),
+or requirejs (which means dojo),
+https://raw.github.com/segv/jsoSchema/0.9/build/raw/jso/Schema.js[jso/Schema.js]
+(https://raw.github.com/segv/jsoSchema/0.9/build/min/jso/Schema.js[minified]).
 
-It's easiest if we start with an example. Let's say we have a bunch of
-people objects, and they must all have a name, which itself has to be
-a string:
+If you're using the
+https://developers.google.com/closure/compiler/[Closure Compiler] you
+can just use the source file as is, maybe adding
+`goog.provide('jsoSchema')`, the code has the required type
+definitions and structure to compile cleanly with
++ADVANCED_OPTIMIZATIONS+, though you might want to remove some of the
+string property names which exist only to make sure the public api of
+the minified jquery/requestjs files is what is documented here (if
+you're using the closure compiler this should all make sense, if not
+just don't worry about it).
 
-  Record({ name: String() });
+== Usage ==
 
-But that's probably wrong, they probably have an address field too,
-but we don't know anything about it:
+It should be pretty simple, create a schema, given it a value, see if
+you got +true+ or +false+ back. fin.
 
-  Record({ name: String(),
-           address: Object() });
+Here's a short example, but see
+https://raw.github.com/segv/jsoSchema/master/test/examples.js[test/examples.js]
+for more examples:
 
-actually, we do, we know that the address has to be a list of strings
-(what each string means we don't know nor really care about):
+  var schema = s.Record({ name: s.String(), age: s.Integer() });
 
-  Record({ name: String(),
-           address: Array(String()) });
+  var data = { name: "marco", age: 25 };
 
-oh, wait, they have to have an age too:
+  schema.validate(data); // returns true
 
-  Record({ name: String(),
-           address: Array(String()),
-           age: Number() });
+  schema.validate({ name: "marco" }); // returns false
 
-but, now that I think about it, not just any number, an integer (we
-don't allow kids who really want to specify that they're 3.5 years and
-not 3 years old):
+  schema = s.Array(s.Number());
 
-  Record({ name: String(),
-           address: Array(String()),
-           age: Integer() });
+  schema.validate([1]); // returns true
+  schema.validate(["1"]); // returns false
 
-but, let's be pedantic. It's a positive number (actually it has to be
-greater than 25, since our web site sells souls, and we all know the
-devil doesn't want un-ripe souls):
+  schema = s.Record({ name: s.String(), age: s.Or(s.Integer(), s.Constant("none-given")) });
 
-  Record({ name: String(),
-           address: Array(String()),
-           age: And(Integer(), GreaterThanEquals(25)) });
+  schema.validate({ name: "marco" }); // returns false
+  schema.validate({ name: "marco", age: 63 }); // returns true
+  schema.validate({ name: "marco", age: "none-given" }); // returns true
+  schema.validate({ name: "marco", age: false }); // returns false
+  schema.validate({ name: "marco", age: -4 }); // returns false
 
-thats our first example of combining schemas (we'd use && directly if
-javascript would let us override operators, but it doesn't, so we
-won't). jsoSchema defines a few schema which combine other schemas:
-And, Or, Every and Any (and If, but we'll ignore that for now).
-
-However, we probably can't write that exactly, using the requirejs
-build what we'd actualy have to write is:
+Note: we probably can't write that exactly since the source file
+exports the variable +jsoSchema+ but i am way too lazy to type
++jsoSchema+ over and over again (so I like to use a locally bound +s+
+variable). Here's what it would actually look like using requirejs:
 
   require([ 'jso/Schema.js' ], function (s) {
     // first define our schema:
@@ -80,37 +88,59 @@ build what we'd actualy have to write is:
     });
   });
 
-== API ==
+and with jquery:
+
+  (function ($) {
+    var s = jQuery.fn.jsoSchema;
+    // first define our schema:
+    var schema = s.Record({ name: s.String(),
+                            address: s.Array(s.String()),
+                            age: s.And(s.Integer(), s.GreaterThanEquals(25)) });
+    $.post("/the/url/").done(function (data) {
+      if (! schema.valid(data)) {
+        errorBadData();
+      } else {
+        ...
+      }
+    });
+  })(jQuery);
+
+== Generators ==
 
 Read to code if you want all the details (the code, and not this
 README, is what you're actually using, so you you should read that
-anyway), but here's a, probably inaccurate, summary.
+anyway), but here's a, probably inaccurate and incomplete, summary.
 
 === Value Conditions ===
 
-Number()::
-  A number (as per typeof)
-String()::
-  A string (as per typeof)
-Boolean()::
-  typeof(value) === "boolean"
+Number(), String(), Boolean()::
+  Checks that the given value's +typeof+ is +"number"+, +"string"+ or +"boolean"+ respectively
 OfType(typeName)::
-  a check on typeof
-Enum(values)::
-  any one of the passed in values (as per ===), values is an array
-OneOf(...values)::
-Condition(function)::
-  passes the value to function; if functions return true-ish (the ternary operator ?: is used) passes, otherwise fails.
+  Checks that the given values's +typeof+ is +==+ to +typeName+
 Constant(value)::
-  Only matches the passed in value (test with ===)
+  Checks that the given value is +===+ to +value+.E
+num(...values)::
+  Checks that the given value is one of elements of +values+ (as per +===+). This is simply a convenience around OneOf.
+OneOf(values)::
+  Checks that the given value is one of elements of +values+ (as per +===+). 
+Condition(function)::
+  Checks that +function+, when applied to the given value, returns a truthy value.
 
 === Objects (and Arrays) ===
 
-Record(properties)::
-HashTable()::
-Object(descriptoin)::
-Array(item)::
-  An array where each item passes item.
+Record(properties):: Checks that the given value is an object, with
+  the same set of properties as +properties+ (no more, no less), and
+  that each of the given value's property value checks against the
+  schema in +properties+.
+
+HashTable():: Simply checks that the given value is an object.
+
+Object(description)::
+
+Array(item), Array(item, length):: Checks that the given value is an
+  array, that the value's length checks against +length+ (optional,
+  defaults to just +Pass()+) and that each time checks against +item+.
+  
 Tuple(...items)::
   An array of length items where each element passes the corresponding item
 
@@ -152,45 +182,55 @@ This code vs data approach has two important consequences:
 If your schema can be expressed as a singe condition on a single
 value, just use the Condition schema and be done with it. Otherwise,
 read on, and may God have mercy on your soul (unless you eat
-continuations for breakfast, than, gutten appetite).
+continuations for breakfast, then, gutten appetite).
 
 A jso schema is just a 3 argument function: the value to validate,
 what to do if the value is valid, and what to do if the value is
 invalid. 
 
 Let's pretend, as an example, that you wanted to write the And schema
-combiner, but it didn't aplreay exsit (what we'll write in this
+combiner, but it didn't already exist (what we'll write in this
 example is equivalent to the built in And combiner). You might be
-tempted to wirte this:
+tempted to write this:
 
   function (a, b) {
     return function (value, p, f) {
-      if (a(value) && b(value)) {
-        p();
-      } else {
-        f();
-      }
+      a(value) && b(value) ? p() : f();
     }
   }
 
 i can see where you're coming from, and i understand what's going on
-in your head, but your wrong; wrong with a capital W.
+in your head, but you're wrong. the problem is in the calls to
+`a(value)` and `b(value)`, both of those functions also take a p and f
+parameter, but what do we pass them? The thing to realize is that
+calling another validator function, or calling `p` or `f`, has to be
+the last thing a validator function does (we could enforce this
+programatticaly, but it'd make debugging the code a huge pain in the
+ass).
 
-what you should have written was this:
+so, in this case, we'd like to call `a`, and if that returns true,
+then call `b`, but our rule says the call to `a`, which is itself a
+validator, has to be the last thing our function does. how can we do
+that?
 
-  function (a, b) {
-    return function (value, p, f) {
-      return a(value, 
-               function() { return b(value, p, f); },
-               f);
-      }
-    }
-  }
+the thing to realize is that a takes, as an input parameter, a
+function that it will call if the value checks. that's where we can
+put our logic for calling b. so instead of this:
 
-  
-The latter function says, in more or less understandable english:
+  a(value) && b(value)
 
-Test a, if it passes then test and if B passes do what we should have
-done on success, otherwise do what we should have done on failure. If
-A doesn't pass, than do what we were told to do on failure.
+we have:
 
+  a(value,
+    function () { b(value, 
+                    p); })
+
+though we are still not telling a what to do if it fails, fortunetely
+that's easy, if `a` fails then we fail, and our `f` parameter is what
+to do if we fail. applying the same reasoning to b:
+
+  a(value,
+    function () { b(value, 
+                    p,
+                    f); },
+    f)

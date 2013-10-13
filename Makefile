@@ -3,7 +3,7 @@ RAW=build/raw
 MIN=build/min
 
 test: node_modules/requirejs node_modules/buster build/min/jso/Schema.js
-	nodejs ./test/test.js
+	nodejs ./test/test.js ./test/examples.js
 
 $(RAW)/jquery.jsoSchema.js: $(SRC)/jsoSchema.js
 	mkdir -p $(dir $@)
