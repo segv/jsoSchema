@@ -57,6 +57,24 @@ javascript would let us override operators, but it doesn't, so we
 won't). jsoSchema defines a few schema which combine other schemas:
 And, Or, Every and Any (and If, but we'll ignore that for now).
 
+However, we probably can't write that exactly, using the requirejs
+build what we'd actualy have to write is:
+
+  require([ 'jso/Schema.js' ], function (s) {
+    // first define our schema:
+    var schema = s.Record({ name: s.String(),
+                            address: s.Array(s.String()),
+                            age: s.And(s.Integer(), s.GreaterThanEquals(25)) });
+    // now use it:
+    doXhrCall().then(function(data) {
+      if (! schema.valid(data)) {
+        errorBadData();
+      } else {
+        ...
+      }
+    });
+  });
+
 == API ==
 
 Read to code if you want all the details (the code, and not this
