@@ -29,8 +29,14 @@ var jsoSchema = (function () {
         }
     };
 
-    function And (a, b) {
-        return Every([a,b]);
+    /**
+     * Short circuiting and.
+     *
+     * @param {...validator} conditions
+     * @return {validator}
+     */
+    function And (conditions) {
+        return Every(copyArray(arguments));
     };
 
     /**
@@ -60,12 +66,11 @@ var jsoSchema = (function () {
     /**
      * 2 argument Any
      *
-     * @param {validator} a
-     * @param {validator} b
+     * @param {...validator} conditions
      * @return {validator}
      */
-    function Or (a, b) {
-        return Any([ a, b ]); 
+    function Or (conditions) {
+        return Any(copyArray(arguments)); 
     };
 
     function If (condition, then, els) {
@@ -83,6 +88,11 @@ var jsoSchema = (function () {
         };
     };
 
+
+    function copyArray (array) {
+        return [].slice.call(array, 0);
+    };
+    
     /**
      * Return type, as string, of the passed in object. Distinguish
      * between null, arrays and objects.
