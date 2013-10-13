@@ -46,3 +46,8 @@ compile: $(MIN)/jso/Schema.js $(MIN)/jquery.jsoSchema.js
 clean:
 	rm -rf build node_modules
 
+build/README.html: README.asciidoc
+	mkdir -p $(dir $@)
+	asciidoc -o $@ README.asciidoc 
+
+doc: build/README.html

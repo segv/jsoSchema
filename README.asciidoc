@@ -1,12 +1,12 @@
 jsoSchema is a schema language and validation library for javascript
 data, or you coudl call it json schema, that wouldn't be wrong.
 
-= Installation =
+== Installation ==
 
 We provide, in the built branch, minified version of jsoSchema for
 jquery and requirejs (dojo/node).
 
-= Introduction =
+== Introduction ==
 
 A jsoSchema schema is an object, in particular a function, which takes
 as input a javascript object (usually the result of json parsing) and
@@ -57,34 +57,74 @@ javascript would let us override operators, but it doesn't, so we
 won't). jsoSchema defines a few schema which combine other schemas:
 And, Or, Every and Any (and If, but we'll ignore that for now).
 
-= API =
+== API ==
 
 Read to code if you want all the details (the code, and not this
 README, is what you're actually using, so you you should read that
-anyway), but here's a, probably inaccurate, summary:
+anyway), but here's a, probably inaccurate, summary.
 
-Number::
+=== Value Conditions ===
+
+Number()::
   A number (as per typeof)
-String::
+String()::
   A string (as per typeof)
-Boolean::
+Boolean()::
   typeof(value) === "boolean"
-Any::
-  Any one, the first, of the passed in validators.
-Or::
-  two arguement form of Any
-Every::
-  All of the passed in validators.
-And::
-  two argument form of Every
-OfType::
+OfType(typeName)::
   a check on typeof
-Enum::
-  any one of the passed in values (as per ===);
-Constant::
-  === to the passed in value
+Enum(values)::
+  any one of the passed in values (as per ===), values is an array
+OneOf(...values)::
+Condition(function)::
+  passes the value to function; if functions return true-ish (the ternary operator ?: is used) passes, otherwise fails.
+Constant(value)::
+  Only matches the passed in value (test with ===)
 
-= Defining new schemas =
+=== Objects (and Arrays) ===
+
+Record(properties)::
+HashTable()::
+Object(descriptoin)::
+Array(item)::
+  An array where each item passes item.
+Tuple(...items)::
+  An array of length items where each element passes the corresponding item
+
+=== Schema Combiners ===
+
+Or(a,b)::
+  If a passes, the Or passes, otherwise b will be tested.
+Any(conditions)::
+  N-argument version of Or.
+And(a,b)::
+  If a passes b will be tested, otherwise the And fails.
+Every(conditions)::
+  N-argument version of And
+
+== Compared to JSON schema ==
+
+http://tools.ietf.org/html/draft-zyp-json-schema-04
+
+While jsoSchema and JSON Schema server very similar purposes, they go
+about it in two very different ways. A JSON Schema is a bit of data
+which is passed to a validator, along with the actual data to
+validate, and the validator understands the semantics of JSON Schema
+and dos what the schema says it should do given the data it has.
+
+a jsoSchema is a block of code describing how to test if something is
+valid or not.
+
+This code vs data approach has two important consequences:
+
+1. A JSON Schema can be represented, and transmitted and stored, as
+   JSON data; a jsoSchema can not.
+
+2. A jsoSchema can perfrom any computation that's needed; a JSON
+   Schema is limited to the constraints defined in the JSON Schema
+   specification.
+
+== Defining new schemas ==
 
 If your schema can be expressed as a singe condition on a single
 value, just use the Condition schema and be done with it. Otherwise,
