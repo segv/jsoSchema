@@ -96,6 +96,19 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
         },
         "record": function () {
             valid({ a: 42 }, s.Record({ a: s.Number() }));
+            invalid({ b: 42 }, s.Record({ a: s.Number() }));
+            invalid({ b: 42 }, s.Record({ a: s.Pass() }));
+            invalid({ b: 42 }, s.Record({ b: s.Pass(), a: s.Pass() }));
+            valid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
+                                              allow_other_properties: true }));
+            invalid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
+                                                allow_other_properties: false }));
+            valid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
+                                              optional_properties: { c: s.Pass() },
+                                              allow_other_properties: false }));
+            invalid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
+                                                optional_properties: { c: s.Fail() },
+                                                allow_other_properties: false }));
         },
         "nested conditions": function () {
             valid(1, s.Or(s.And(s.GreaterThan(0),
@@ -106,7 +119,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
             var validator = s.Or(s.And(s.Object({ required_properties: { v: s.Constant(1) } }),
                                        s.Record({ v: s.Constant(1), a: s.Constant(3) })),
                                  s.And(s.Object({ required_properties: { v: s.Constant(2) } }),
-                                       s.Record({ v: s.Constant(1), b: s.String() })));
+                                       s.Record({ v: s.Constant(2), b: s.String() })));
 
             valid({ v: 1, a: 3 }, validator);
             valid({ v: 2, b: "3" }, validator);                               
