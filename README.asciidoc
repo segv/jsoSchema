@@ -46,6 +46,8 @@ Here's a short example, but see
 https://raw.github.com/segv/jsoSchema/master/test/examples.js[test/examples.js]
 for more examples:
 
+[source,javascript]
+----
   var schema = s.Record({ name: s.String(), age: s.Integer() });
 
   var data = { name: "marco", age: 25 };
@@ -66,12 +68,15 @@ for more examples:
   schema.validate({ name: "marco", age: "none-given" }); // returns true
   schema.validate({ name: "marco", age: false }); // returns false
   schema.validate({ name: "marco", age: -4 }); // returns false
+----
 
 Note: we probably can't write that exactly since the source file
 exports the variable +jsoSchema+ but i am way too lazy to type
 +jsoSchema+ over and over again (so I like to use a locally bound +s+
 variable). Here's what it would actually look like using requirejs:
 
+[source,javascript]
+----
   require([ 'jso/Schema.js' ], function (s) {
     // first define our schema:
     var schema = s.Record({ name: s.String(),
@@ -86,9 +91,12 @@ variable). Here's what it would actually look like using requirejs:
       }
     });
   });
+----
 
 and with jquery:
 
+[source,javascript]
+----
   (function ($) {
     var s = jQuery.fn.jsoSchema;
     // first define our schema:
@@ -103,6 +111,7 @@ and with jquery:
       }
     });
   })(jQuery);
+----
 
 == Generators ==
 
@@ -192,11 +201,14 @@ combiner, but it didn't already exist (what we'll write in this
 example is equivalent to the built in And combiner). You might be
 tempted to write this:
 
+[source,javascript]
+----
   function (a, b) {
     return function (value, p, f) {
       a(value) && b(value) ? p() : f();
     }
   }
+----
 
 i can see where you're coming from, and i understand what's going on
 in your head, but you're wrong. the problem is in the calls to
@@ -216,20 +228,29 @@ the thing to realize is that a takes, as an input parameter, a
 function that it will call if the value checks. that's where we can
 put our logic for calling b. so instead of this:
 
+[source,javascript]
+----
   a(value) && b(value)
+----
 
 we have:
 
+[source,javascript]
+----
   a(value,
     function () { b(value, 
                     p); })
+----
 
 though we are still not telling a what to do if it fails, fortunetely
 that's easy, if `a` fails then we fail, and our `f` parameter is what
 to do if we fail. applying the same reasoning to b:
 
+[source,javascript]
+----
   a(value,
     function () { b(value, 
                     p,
                     f); },
     f)
+----
