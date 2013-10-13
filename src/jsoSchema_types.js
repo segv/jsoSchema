@@ -1,4 +1,4 @@
 /** 
- * @typedef {function(function(*),function(),function(...))}
+ * @typedef {function(*,function(),function(...))}
  */
 var validator;
