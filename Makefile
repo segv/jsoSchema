@@ -44,4 +44,5 @@ $(MIN)/jquery.jsoSchema.js: build/raw/jquery.jsoSchema.js build/compiler.jar
 compile: $(MIN)/jso/Schema.js $(MIN)/jquery.jsoSchema.js
 
 clean:
-	rm -rf build
+	rm -rf build node_modules
+
