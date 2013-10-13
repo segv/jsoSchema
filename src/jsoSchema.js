@@ -254,105 +254,47 @@ var jsoSchema = (function () {
         return Condition(function (v) { return v === value; });
     };
 
-    var check_one_required_property = function(spec,
-                                               required_properties, optional_properties, allow_other_properties,
-                                               value, p, f) {
-        
-        var property = required_properties[0];
-        var property_schema = spec.required_properties[property];
-
-        if (typeOf(value[property]) == "undefined") {
-            return f("Missing required property ", property, " on ", value);
-        } else {
-            return property_schema(value[property],
-                                   function () {
-                                       return object_schema_loop(spec,
-                                                                 required_properties.slice(1),
-                                                                 optional_properties,
-                                                                 allow_other_properties,
-                                                                 value,
-                                                                 p,
-                                                                 f);
-                                   },
-                                   f);
-        }
-    };
-
-    var check_one_optional_property = function (spec,
-                                                required_properties, optional_properties, allow_other_properties,
-                                                value, p, f) {
-        var property = optional_properties[0];
-        var property_schema = spec.optional_properties[property];
-        return property_schema(value[property],
-                               function () {
-                                   return object_schema_loop(spec,
-                                                             required_properties,
-                                                             optional_properties.slice(1),
-                                                             allow_other_properties,
-                                                             value,
-                                                             p,
-                                                             f);
-                               },
-                               f);
-    };
-
-    var check_extra_properties = function (spec,
-                                           required_properties, optional_properties, allow_other_properties,
-                                           value, p, f) {
-
-        var value_properties = { };
-        
-        forIn(value, function (v, property) { value_properties[property] = true; });
-        
-        forIn(required_properties,
-              function (v, property) {
-                  delete value_properties[property];
-              });
-        forIn(optional_properties,
-              function (v, property) {
-                  delete value_properties[property];
-              });
-
-        if (keys(value_properties).length > 0) {
-            return f("Extra keys,", value_properties, " in ", value);
-        } else {
-            return p();
-        }
-    };
-
-    var object_schema_loop = function (spec,
-                                       required_properties, optional_properties, allow_other_properties,
-                                       value, p, f) {
-        if (required_properties.length > 0) {
-            return check_one_required_property(spec,
-                                               required_properties, optional_properties, allow_other_properties,
-                                               value, p, f);
-        } else if (optional_properties.length > 0) {
-            return check_one_optional_property(spec,
-                                               required_properties, optional_properties, allow_other_properties,
-                                               value, p, f);
-        } else if (allow_other_properties == false) {
-            return check_extra_properties(spec,
-                                          required_properties, optional_properties, allow_other_properties,
-                                          value, p, f);
-        } else {
-            return p();
-        }
-    };
-
     function Object (spec) {
-        return function (value, p, f) {
-            spec = { required_properties: spec['required_properties'] || { },
-                     optional_properties: spec['optional_properties'] || { },
-                     allow_other_properties: typeOf(spec['allow_other_properties']) == "undefined" ? true : spec['allow_other_properties'] };
-            object_schema_loop(spec,
-                               spec.required_properties,
-                               spec.optional_properties,
-                               spec.allow_other_properties,
-                               value,
-                               p,
-                               f);
-        };
+        var conditions = [ ];
+
+        var required_properties = spec.required_properties || { };
+        forIn(required_properties,
+              function (schema, property_name) {
+                  conditions.push(function (value, p, f) {
+                      if (value.hasOwnProperty(property_name)) {
+                          schema(value[property_name], p, f);
+                      } else {
+                          f();
+                      }
+                  });
+              });
+
+        var optional_properties = spec.optional_properties || { };
+        forIn(optional_properties,
+              function (schema, property_name) {
+                  conditions.push(function (value, p, f) {
+                      if (value.hasOwnProperty(property_name)) {
+                          schema(value[property_name], p, f);
+                      } else {
+                          p();
+                      }
+                  });
+              });
+
+        var allow_other_properties = typeOf(spec.allow_other_properties) == "undefined" ? true : spec.allow_other_properties;
+        if (! allow_other_properties) {
+            conditions.push(Condition(function (value) {
+                var value_properties = { };
+                forIn(value, function (v, property) { value_properties[property] = true; });
+        
+                forIn(required_properties, function (v, property) { delete value_properties[property]; });
+                forIn(optional_properties, function (v, property) { delete value_properties[property]; });
+
+                return keys(value_properties).length == 0;
+            }));
+        }                      
+
+        return Every(conditions);
     };
 
     function Record (required_properties) {
@@ -470,7 +412,11 @@ var jsoSchema = (function () {
              'Enum': Enum,
              'OneOf': OneOf,
              'Constant': Constant,
-             'Object': Object,
+             'Object': function (spec) {
+                 return Object({ required_properties: spec['required_properties'],
+                                 optional_properties: spec['optional_properties'],
+                                 allow_other_properties: spec['allow_other_properties'] });
+             },
              'Record': Record,
              'HashTable': HashTable,
              'Array': Array,
