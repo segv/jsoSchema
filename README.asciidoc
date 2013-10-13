@@ -1,5 +1,4 @@
-jsoSchema
-===========
+= jsoSchema
 Marco Baringer <mb@bese.it>
 
 jsoSchema is a schema language and validator for javascript objects
