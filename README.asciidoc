@@ -6,10 +6,10 @@ data, or you coudl call it json schema, that wouldn't be wrong.
 We provide, in the built branch, minified version of jsoSchema for
 jquery and requirejs (dojo/node):
 
-- https://github.com/segv/jsoSchema/tree/0.9/build/raw/jquery.jsoSchema.js[jquery]
-- https://github.com/segv/jsoSchema/tree/0.9/build/raw/jso/Schema[requirejs]
-- https://github.com/segv/jsoSchema/tree/0.9/build/min/jquery.jsoSchema.js[jquery, minified]
-- https://github.com/segv/jsoSchema/tree/0.9/build/min/jso/Schema.js[requirejs, minified]
+- https://raw.github.com/segv/jsoSchema/0.9/build/raw/jquery.jsoSchema.js[jquery]
+- https://raw.github.com/segv/jsoSchema/0.9/build/raw/jso/Schema[requirejs]
+- https://raw.github.com/segv/jsoSchema/0.9/build/min/jquery.jsoSchema.js[jquery, minified]
+- https://raw.github.com/segv/jsoSchema/0.9/build/min/jso/Schema.js[requirejs, minified]
 
 == Introduction ==
 
