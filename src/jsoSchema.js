@@ -208,7 +208,7 @@ var jsoSchema = (function () {
      * @param {Array.<*>} values
      * @return {validator}
      */
-    function Enum (values) {
+    function OneOf (values) {
         var set = { };
         var i;
         for (i = 0; i < values.length; i++) {
@@ -221,8 +221,8 @@ var jsoSchema = (function () {
      * @param {...*} var_args
      * @return {validator}
      */
-    function OneOf (var_args) {
-        return Enum(copyArray(arguments));
+    function Enum (var_args) {
+        return OneOf(copyArray(arguments));
     };
 
 
