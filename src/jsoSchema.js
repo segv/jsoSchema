@@ -199,6 +199,15 @@ var jsoSchema = (function () {
     };
 
     /**
+     * @param {...*} var_args
+     * @return {validator}
+     */
+    function OneOf (var_args) {
+        return Enum([].slice.call(arguments, 0));
+    };
+
+
+    /**
      * @param {*} value
      * @return {validator}
      */
@@ -398,6 +407,7 @@ var jsoSchema = (function () {
              'Boolean': Boolean,
              'Test': Test,
              'Enum': Enum,
+             'OneOf': OneOf,
              'Constant': Constant,
              'Object': Object,
              'Record': Record,
