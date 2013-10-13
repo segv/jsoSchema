@@ -20,11 +20,11 @@ into your own code base.
 
 That said, you can get versions of jsoSchema designed to work with
 jquery,
-https://raw.github.com/segv/jsoSchema/0.9/build/raw/jquery.jsoSchema.js[jquery.jsoSchema.js]
-(https://raw.github.com/segv/jsoSchema/0.9/build/min/jquery.jsoSchema.js[minified]),
+https://raw.github.com/segv/jsoSchema/0.9.1/build/raw/jquery.jsoSchema.js[jquery.jsoSchema.js]
+(https://raw.github.com/segv/jsoSchema/0.9.1/build/min/jquery.jsoSchema.js[minified]),
 or requirejs (which means dojo),
-https://raw.github.com/segv/jsoSchema/0.9/build/raw/jso/Schema.js[jso/Schema.js]
-(https://raw.github.com/segv/jsoSchema/0.9/build/min/jso/Schema.js[minified]).
+https://raw.github.com/segv/jsoSchema/0.9.1/build/raw/jso/Schema.js[jso/Schema.js]
+(https://raw.github.com/segv/jsoSchema/0.9.1/build/min/jso/Schema.js[minified]).
 
 If you're using the
 https://developers.google.com/closure/compiler/[Closure Compiler] you
