@@ -81,6 +81,11 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
 
             valid(1, s.And(s.Constant(1), s.Constant(1)));
             valid(1, s.And(s.LessThan(2), s.GreaterThan(0)));
+
+            valid(1, s.And(s.And(s.Constant(1)), 
+                           s.And(), 
+                           s.And(s.Constant(1), 
+                                 s.Constant(1))));
         },
         "or": function () {
             valid(undefined, s.Or(s.Pass(), s.Pass()));
