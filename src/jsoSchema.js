@@ -222,7 +222,7 @@ var jsoSchema = (function () {
      * @return {validator}
      */
     function Constant (value) {
-        return Condition(function (v) { return v == value; });
+        return Condition(function (v) { return v === value; });
     };
 
     var check_one_required_property = function(spec,
