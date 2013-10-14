@@ -4,7 +4,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
     var valid   = function (value, schema) { buster.assert(s.validate(value, schema)); };
     var invalid = function (value, schema) { buster.refute(s.validate(value, schema)); };
 
-    buster.testCase("Flat schemas", {
+    buster.testCase("jsoSchema", {
         "conditions": function () {
             valid(0, s.Condition(function (value) { return value == 0; }));
         },
