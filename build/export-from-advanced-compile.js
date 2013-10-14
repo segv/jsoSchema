@@ -6,40 +6,42 @@
  * the documented names.
  */
 
-jsoSchema = { 'Every': jsoSchema.Every,
-              'And':   jsoSchema.And,
-              'Any':   jsoSchema.Any,
-              'Or':    jsoSchema.Or,
-              'If':    jsoSchema.If,
-              'OfType': jsoSchema.OfType,
-              'Condition': jsoSchema.Condition,
-              'Number': jsoSchema.Number,
-              'Integer': jsoSchema.Integer,
-              'GreaterThan': jsoSchema.GreaterThan,
-              'GreaterThanEqual': jsoSchema.GreaterThanEqual,
-              'LessThan': jsoSchema.LessThan,
-              'LessThanEqual': jsoSchema.LessThanEqual,
-              'String': jsoSchema.String,
-              'Boolean': jsoSchema.Boolean,
-              'Test': jsoSchema.Test,
-              'Enum': jsoSchema.Enum,
-              'OneOf': jsoSchema.OneOf,
-              'Constant': jsoSchema.Constant,
-              'Object': function (spec) {
-                  return jsoSchema.Object({ required_properties: spec['required_properties'],
-                                            optional_properties: spec['optional_properties'],
-                                            allow_other_properties: spec['allow_other_properties'] });
-              },
-              'Record': jsoSchema.Record,
-              'HashTable': jsoSchema.HashTable,
-              'Array': jsoSchema.Array,
-              'Tuple': jsoSchema.Tuple,
-              'Nullable': jsoSchema.Nullable,
-              'Pass': jsoSchema.Pass,
-              'Fail': jsoSchema.Fail,
-              'violatesSchema': function (value, schema) {
-                  var ret = jsoSchema.violatesSchema(value, schema);
-                  return ret == false ? false : { 'value': ret.value, 'schema': ret.schema, 'message': ret.message };
-              },
-              'validate': jsoSchema.validate
-            };
+jsoSchema = (function (s) {
+    return { 'Every': s.Every,
+             'And':   s.And,
+             'Any':   s.Any,
+             'Or':    s.Or,
+             'If':    s.If,
+             'OfType': s.OfType,
+             'Condition': s.Condition,
+             'Number': s.Number,
+             'Integer': s.Integer,
+             'GreaterThan': s.GreaterThan,
+             'GreaterThanEqual': s.GreaterThanEqual,
+             'LessThan': s.LessThan,
+             'LessThanEqual': s.LessThanEqual,
+             'String': s.String,
+             'Boolean': s.Boolean,
+             'Test': s.Test,
+             'Enum': s.Enum,
+             'OneOf': s.OneOf,
+             'Constant': s.Constant,
+             'Object': function (spec) {
+                 return s.Object({ required_properties: spec['required_properties'],
+                                   optional_properties: spec['optional_properties'],
+                                   allow_other_properties: spec['allow_other_properties'] });
+             },
+             'Record': s.Record,
+             'HashTable': s.HashTable,
+             'Array': s.Array,
+             'Tuple': s.Tuple,
+             'Nullable': s.Nullable,
+             'Pass': s.Pass,
+             'Fail': s.Fail,
+             'violatesSchema': function (value, schema) {
+                 var ret = s.violatesSchema(value, schema);
+                 return ret == false ? false : { 'value': ret.value, 'schema': ret.schema, 'message': ret.message };
+             },
+             'validate': s.validate
+           };
+})(jsoSchema);
