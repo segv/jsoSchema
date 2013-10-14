@@ -1,3 +1,5 @@
-build
+build/min
+build/raw
+build/compiler.jar
 node_modules
 *~

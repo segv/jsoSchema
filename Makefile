@@ -11,6 +11,7 @@ $(RAW)/jquery.jsoSchema.js: $(SRC)/jsoSchema.js
 	echo "(function (jQuery) { " > $@
 	cat $< >> $@
 	echo >> $@
+	cat build/export-from-advanced-compile.js >> $@
 	echo "jQuery.fn['jsoSchema'] = jsoSchema;" >> $@
 	echo "})(jQuery);" >> $@
 
@@ -19,6 +20,7 @@ $(RAW)/jso/Schema.js: $(SRC)/jsoSchema.js
 	echo "define([ ], function () { " > $@
 	cat $< >> $@
 	echo >> $@
+	cat build/export-from-advanced-compile.js >> $@
 	echo "return jsoSchema;" >> $@
 	echo "});" >> $@
 
@@ -32,15 +34,24 @@ build/compiler.jar:
 	wget "http://dl.google.com/closure-compiler/compiler-latest.zip" -O build/compiler-latest.zip
 	(cd build && unzip compiler-latest.zip compiler.jar && rm compiler-latest.zip)
 
-JS_COMPILE=java -jar build/compiler.jar --externs $(SRC)/jsoSchema_externs.js --compilation_level ADVANCED_OPTIMIZATIONS --warning_level=VERBOSE --js $(SRC)/jsoSchema_types.js
+define js_compile
+java -jar build/compiler.jar \
+     --externs build/externs.js \
+     --compilation_level ADVANCED_OPTIMIZATIONS \
+     --warning_level=VERBOSE \
+     --property_map_output_file $(patsubst %.js,%.property-map,$<) \
+     --create_source_map $(patsubst %.js,%.source-map,$<) \
+     --js $(SRC)/jsoSchema_types.js \
+     --js $< --js_output_file $@ 2>&1
+endef
 
 $(MIN)/jso/Schema.js: build/raw/jso/Schema.js build/compiler.jar 
 	mkdir -p $(dir $@)
-	$(JS_COMPILE) --js build/raw/jso/Schema.js --js_output_file build/min/jso/Schema.js 2>&1
+	$(js_compile)
 
 $(MIN)/jquery.jsoSchema.js: build/raw/jquery.jsoSchema.js build/compiler.jar 
 	mkdir -p $(dir $@)
-	$(JS_COMPILE)  --js build/raw/jquery.jsoSchema.js --js_output_file build/min/jquery.jsoSchema.js 2>&1
+	$(js_compile)
 
 compile: $(MIN)/jso/Schema.js $(MIN)/jquery.jsoSchema.js
 

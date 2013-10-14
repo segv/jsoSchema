@@ -13,8 +13,9 @@
  * implied.  See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
 var jsoSchema = (function () {
+
+    var s = { };
 
     /**
      * Return true if @param{schema} accepts @param{value}
@@ -23,8 +24,8 @@ var jsoSchema = (function () {
      * @param {schema} schema
      * @return boolean
      */
-    function validate (value, schema) {
-        return violatesSchema(value, schema) == false ? true : false;
+    s.validate = function (value, schema) {
+        return s.violatesSchema(value, schema) == false ? true : false;
     };
 
     /**
@@ -36,7 +37,7 @@ var jsoSchema = (function () {
      * @param {schema} schema
      * @return (false|{value,schema,message})
      */
-    function violatesSchema (value, schema) {
+    s.violatesSchema = function (value, schema) {
         var error = undefined;
         var ok = false;
         schema(value,
@@ -52,8 +53,8 @@ var jsoSchema = (function () {
      * @param {...schema} conditions
      * @return {schema}
      */
-    function And (conditions) {
-        return Every(copyArray(arguments));
+    s.And = function (conditions) {
+        return s.Every(s.copyArray(arguments));
     };
 
     /**
@@ -62,7 +63,7 @@ var jsoSchema = (function () {
      * @param {Array.<schema>} conditions
      * @return {schema}
      */
-    function Every (conditions) {
+    s.Every = function (conditions) {
         return function (value, p, f) {
             var loop = function (index) {
                 if (index == conditions.length) {
@@ -83,8 +84,8 @@ var jsoSchema = (function () {
      * @param {...schema} conditions
      * @return {schema}
      */
-    function Or (conditions) {
-        return Any(copyArray(arguments)); 
+    s.Or = function (conditions) {
+        return s.Any(s.copyArray(arguments)); 
     };
 
     /**
@@ -93,7 +94,7 @@ var jsoSchema = (function () {
      * @param {Array.<schema>} conditions
      * @return {schema}
      */
-    function Any (conditions) {
+    s.Any = function (conditions) {
         return function (value, p, f) {
             var loop = function (index) {
                 if (index == conditions.length) {
@@ -108,8 +109,8 @@ var jsoSchema = (function () {
         };
     };
 
-    function If (condition, then, els) {
-        return Or(And(condition, then), els);
+    s.If = function (condition, then, els) {
+        return s.Or(s.And(condition, then), els);
     };
 
     /** 
@@ -117,7 +118,7 @@ var jsoSchema = (function () {
      * @param {function(*):boolean} valueCheck
      * @return {schema}
      */
-    function Condition (valueCheck) {
+    s.Condition = function (valueCheck) {
         return function(value, p, f) {
             return valueCheck(value) ? p() : f(value, " did not return true from ", valueCheck);
         };
@@ -132,7 +133,7 @@ var jsoSchema = (function () {
      * @param {*} value
      * @return {string}
      */
-    function typeOf(value) {
+    s.typeOf = function(value) {
         var s = typeof value;
         if (s === 'object') {
             if (value) {
@@ -150,111 +151,111 @@ var jsoSchema = (function () {
      * @param {string} typeName
      * @return {schema}
      */
-    function OfType (typeName) {
-        return Condition(function (value) { return typeOf(value) == typeName; });
+    s.OfType = function (typeName) {
+        return s.Condition(function (value) { return s.typeOf(value) == typeName; });
     };
 
     /**
      * @return {schema}
      */
-    function Number () {
-        return OfType("number");
-    };
-
-    /**
-     * @param {number} lowerBound
-     * @return {schema}
-     */
-    function GreaterThan (lowerBound) {
-        return And(Number(), Condition(function (/**number*/ value) { return lowerBound < value; }));
+    s.Number = function () {
+        return s.OfType("number");
     };
 
     /**
      * @param {number} lowerBound
      * @return {schema}
      */
-    function GreaterThanEqual (lowerBound) {
-        return And(Number(), Condition(function (/**number*/value) { return lowerBound <= value; }));
+    s.GreaterThan = function (lowerBound) {
+        return s.And(s.Number(), s.Condition(function (/**number*/ value) { return lowerBound < value; }));
+    };
+
+    /**
+     * @param {number} lowerBound
+     * @return {schema}
+     */
+    s.GreaterThanEqual = function (lowerBound) {
+        return s.And(s.Number(), s.Condition(function (/**number*/value) { return lowerBound <= value; }));
     };
 
     /**
      * @param {number} upperBound
      * @return {schema}
      */
-    function LessThan (upperBound) {
-        return And(Number(), Condition(function (/**number*/value) { return value < upperBound; }));
+    s.LessThan = function (upperBound) {
+        return s.And(s.Number(), s.Condition(function (/**number*/value) { return value < upperBound; }));
     };
 
     /**
      * @param {number} upperBound
      * @return {schema}
      */
-    function LessThanEqual (upperBound) {
-        return And(Number(), Condition(function (/**number*/value) { return value <= upperBound; }));
+    s.LessThanEqual = function (upperBound) {
+        return s.And(s.Number(), s.Condition(function (/**number*/value) { return value <= upperBound; }));
     };
 
     /**
      * @return {schema}
      */
-    function Integer () {
-        return And(Number(), Condition(function (/**number*/value) { return value % 1 == 0; }));
+    s.Integer = function () {
+        return s.And(s.Number(), s.Condition(function (/**number*/value) { return value % 1 == 0; }));
     };
 
     /**
      * @return {schema}
      */
-    function String () {
-        return OfType("string");
+    s.String = function () {
+        return s.OfType("string");
     };
 
     /**
      * @return {schema}
      */
-    function Boolean () {
-        return OfType("boolean");
+    s.Boolean = function () {
+        return s.OfType("boolean");
     };
 
     /**
      * @param {string|RegExp} re
      * @return {schema}
      */
-    function Test (re) {
-        if (typeOf(re) == "string") {
+    s.Test = function (re) {
+        if (s.typeOf(re) == "string") {
             re = new RegExp(re);
         }
-        return And(String(), Condition(function (value) { return re.exec(value) != null; }));
+        return s.And(s.String(), s.Condition(function (value) { return re.exec(value) != null; }));
     };
 
     /**
      * @param {Array.<*>} values
      * @return {schema}
      */
-    function OneOf (values) {
+    s.OneOf = function (values) {
         var set = { };
         var i;
         for (i = 0; i < values.length; i++) {
             set[values[i]] = true;
         }
-        return Condition(function (value) { return set.hasOwnProperty(value); });
+        return s.Condition(function (value) { return set.hasOwnProperty(value); });
     };
 
     /**
      * @param {...*} var_args
      * @return {schema}
      */
-    function Enum (var_args) {
-        return OneOf(copyArray(arguments));
+    s.Enum = function (var_args) {
+        return s.OneOf(s.copyArray(arguments));
     };
 
     /**
      * @param {*} value
      * @return {schema}
      */
-    function Constant (value) {
-        return Condition(function (v) { return v === value; });
+    s.Constant = function (value) {
+        return s.Condition(function (v) { return v === value; });
     };
 
-    function Object (spec) {
+    s.Object = function (spec) {
         var conditions = [ ];
 
         var required_properties = spec.required_properties || { };
@@ -281,9 +282,9 @@ var jsoSchema = (function () {
                   });
               });
 
-        var allow_other_properties = typeOf(spec.allow_other_properties) === "undefined" ? true : spec.allow_other_properties;
+        var allow_other_properties = s.typeOf(spec.allow_other_properties) === "undefined" ? true : spec.allow_other_properties;
         if (! allow_other_properties) {
-            conditions.push(Condition(function (value) {
+            conditions.push(s.Condition(function (value) {
                 var value_properties = { };
                 forIn(value, function (v, property) { value_properties[property] = true; });
         
@@ -294,15 +295,15 @@ var jsoSchema = (function () {
             }));
         }                      
 
-        return Every(conditions);
+        return s.Every(conditions);
     };
 
-    function Record (required_properties) {
+    s.Record = function (required_properties) {
         return Object({ required_properties: required_properties, 
                         allow_other_properties: false });
     };
 
-    function HashTable () {
+    s.HashTable = function () {
         return Object({ allow_other_properties: true });
     };
 
@@ -311,14 +312,14 @@ var jsoSchema = (function () {
      * @param {schema=} length_schema
      * @return {schema}
      */
-    function Array (item_schema, length_schema) {
+    s.Array = function (item_schema, length_schema) {
         if (arguments.length == 0) {
             throw new Error("Missing required argument item_schema");
         }
-        if (typeOf(length_schema) == "undefined") {
-            length_schema = Pass();
+        if (s.typeOf(length_schema) == "undefined") {
+            length_schema = s.Pass();
         }
-        return And(OfType("array"),
+        return s.And(s.OfType("array"),
                    function (value, p, f) {
                        length_schema(value.length, p, f);
                    },
@@ -338,9 +339,9 @@ var jsoSchema = (function () {
                    });
     };
 
-    function Tuple (items) {
-        items = copyArray(arguments);
-        return And(OfType("array"),
+    s.Tuple = function (items) {
+        items = s.copyArray(arguments);
+        return s.And(s.OfType("array"),
                    function (value, p, f) {
                        if (items.length != value.length) {
                            f("Wrong number f elements in tuple",value,"expected",items.length);
@@ -359,22 +360,22 @@ var jsoSchema = (function () {
                    });
     };
 
-    function Nullable (schema) {
-        return Or(Constant(null), schema);
+    s.Nullable = function (schema) {
+        return s.Or(s.Constant(null), schema);
     };
 
-    function Pass () { 
+    s.Pass = function () { 
         return function (value,p,f) { return p(); }; 
     };
 
-    function Fail () { 
-        var message = copyArray(arguments); 
+    s.Fail = function () { 
+        var message = s.copyArray(arguments); 
         return function (value,p,f) { 
             return f.apply(f, message); 
         }; 
     };
 
-    function copyArray (array) {
+    s.copyArray = function (array) {
         return [].slice.call(array, 0);
     };
 
@@ -393,38 +394,5 @@ var jsoSchema = (function () {
         return k;
     };
 
-    return { 'Every': Every,
-             'And':   And,
-             'Any':   Any,
-             'Or':    Or,
-             'If':    If,
-             'OfType': OfType,
-             'Condition': Condition,
-             'Number': Number,
-             'Integer': Integer,
-             'GreaterThan': GreaterThan,
-             'GreaterThanEqual': GreaterThanEqual,
-             'LessThan': LessThan,
-             'LessThanEqual': LessThanEqual,
-             'String': String,
-             'Boolean': Boolean,
-             'Test': Test,
-             'Enum': Enum,
-             'OneOf': OneOf,
-             'Constant': Constant,
-             'Object': function (spec) {
-                 return Object({ required_properties: spec['required_properties'],
-                                 optional_properties: spec['optional_properties'],
-                                 allow_other_properties: spec['allow_other_properties'] });
-             },
-             'Record': Record,
-             'HashTable': HashTable,
-             'Array': Array,
-             'Tuple': Tuple,
-             'Nullable': Nullable,
-             'Pass': Pass,
-             'Fail': Fail,
-             'violatesSchema': violatesSchema,
-             'validate': validate
-           };
+    return s;
 })();
