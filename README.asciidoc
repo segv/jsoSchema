@@ -1,8 +1,10 @@
 = jsoSchema
 Marco Baringer <mb@bese.it>
 
-jsoSchema is a schema language and validator for javascript objects
-(JSON objects being a very common subset of javascript objects).
+jsoSchema is a schema language and validator for javascript objects.
+
+Note that jsoSchema is not a JSON text parser/validator; it can
+however, and generally is, used with the output of `JSON.parse`.
 
 == Installation ==
 
