@@ -62,6 +62,14 @@ distclean:
 	rm -rf node_modules build
 	git checkout build
 
+release:
+	git checkout -b $(VERSION)
+	make distclean
+	make compile
+	find build/min build/raw -name "*.js" -print0 | xargs -0 git add -f
+	echo $(VERSION) > ./VERSION
+	git add VERSION
+
 build/README.html: README.asciidoc
 	mkdir -p $(dir $@)
 	asciidoc -o $@ README.asciidoc 
