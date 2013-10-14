@@ -60,6 +60,7 @@ clean:
 
 distclean:
 	rm -rf node_modules build
+	git checkout build
 
 build/README.html: README.asciidoc
 	mkdir -p $(dir $@)
