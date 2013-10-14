@@ -41,8 +41,8 @@ just don't worry about it).
 
 == Usage ==
 
-It should be pretty simple, create a schema, given it a value, see if
-you got +true+ or +false+ back. fin.
+It should be pretty simple, create a schema, give it a value, see if
+you get +true+ or +false+ back.
 
 Here's a short example, but see
 https://raw.github.com/segv/jsoSchema/master/test/examples.js[test/examples.js]
@@ -50,55 +50,42 @@ for more examples:
 
 [source,javascript]
 ----
-  var schema = s.Record({ name: s.String(), age: s.Integer() });
+require([ 'jso/Schema' ], function (s) {
+  var schema = s.Record({ name: s.String(), 
+                          age: s.Integer() });
 
-  var data = { name: "marco", age: 25 };
-
-  schema.validate(data); // returns true
-
-  schema.validate({ name: "marco" }); // returns false
+  schema.validate({ name: "Me", age: 25 }); // returns true
+  schema.validate({ name: "Me" }); // returns false
 
   schema = s.Array(s.Number());
 
   schema.validate([1]); // returns true
   schema.validate(["1"]); // returns false
 
-  schema = s.Record({ name: s.String(), age: s.Or(s.Integer(), s.Constant("none-given")) });
+  schema = s.Record({ name: s.String(), 
+                      age: s.Or(s.Integer(), 
+                                s.Constant("none-given")) });
 
-  schema.validate({ name: "marco" }); // returns false
-  schema.validate({ name: "marco", age: 63 }); // returns true
-  schema.validate({ name: "marco", age: "none-given" }); // returns true
-  schema.validate({ name: "marco", age: false }); // returns false
-  schema.validate({ name: "marco", age: -4 }); // returns false
-----
+  schema.validate({ name: "Milhouse" }); // returns false
+  schema.validate({ name: "Milhouse", age: 63 }); // returns true
+  schema.validate({ name: "Milhouse", age: "none-given" }); // returns true
+  schema.validate({ name: "Milhouse", age: false }); // returns false
+  schema.validate({ name: "Milhouse", age: -4 }); // returns false
 
-Note: we probably can't write that exactly since the source file
-exports the variable +jsoSchema+ but i am way too lazy to type
-+jsoSchema+ over and over again (so I like to use a locally bound +s+
-variable). Here's what it would actually look like using requirejs:
+  var age_constraint = s.Condition(function (value) {
+    return 23 <= value.age && value.age <= 32;
+  };
 
-[source,javascript]
-----
-  require([ 'jso/Schema.js' ], function (s) {
-    var schema = s.Array(/* ... */);
-    // ...
-    if (! schema.valid(data)) { /* .... */ }
-    // ...
-  });
-----
+  schema = s.Record({ age: s.Or(age_constraint, 
+                                s.Constant("none-given")) });
 
-and with jquery:
+  schema.validate({ age: 20 }); // returns false
+  schema.validate({ age: "none-given" }); // returns true
+  schema.validate({ age: 25 }); // returns type
+  schema.validate({ age: 35 }); // returns false
 
-[source,javascript]
-----
-  (function ($) {
-    var s = jQuery.fn.jsoSchema;
-    // ...
-    var schema = s.Record(/* ... */);
-    // ...
-    if (! schema.valid(data)) { errorBadData(); } 
-    // ...
-  })(jQuery);
+
+});
 ----
 
 == Generators ==
@@ -198,8 +185,8 @@ tempted to write this:
   }
 ----
 
-i can see where you're coming from, and i understand what's going on
-in your head, but you're wrong. the problem is in the calls to
+I can see where you're coming from, and I understand what's going on
+in your head, but you're wrong. The problem is in the calls to
 `a(value)` and `b(value)`, both of those functions also take a p and f
 parameter, but what do we pass them? The thing to realize is that
 calling another validator function, or calling `p` or `f`, has to be

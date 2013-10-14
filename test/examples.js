@@ -10,7 +10,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
     /* Let's say we have a bunch of people objects, and they must all
      * have a name, which itself has to be a string: */
 
-    data = { name: "marco" };
+    data = { name: "milford" };
     schema = s.Record({ name: s.String() });
     valid();
 
@@ -22,7 +22,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     invalid(); // need to update the data
 
-    data = { name: "marco", address: NaN };
+    data = { name: "milford", address: NaN };
 
     valid();
 
@@ -35,11 +35,11 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     invalid(); // NaN isn't an array of strings
 
-    data = { name: "marco", address: [ "the street."] };
+    data = { name: "milford", address: [ "the street."] };
 
     valid();
 
-    data = { name: "marco", address: [ ] };
+    data = { name: "milford", address: [ ] };
 
     valid();
 
@@ -54,7 +54,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     invalid(); // our zero length array isn't allowed anymore.
 
-    data = { name: "marco", address: [ "the street."] };
+    data = { name: "milford", address: [ "the street."] };
 
     valid();
 
@@ -69,10 +69,10 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     valid(); // our current data is still valid.
 
-    data = { name: "marco", address: [ ] };
+    data = { name: "milford", address: [ ] };
     invalid(); // zero length arrays aren't allowed
 
-    data = { name: "marco", address: null };
+    data = { name: "milford", address: null };
     valid(); // but null is.
 
     /* Schemas can very quickly become large unweidly things, so it's
@@ -92,7 +92,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     valid();
 
-    data = { name: "marco", address: [ "the street" ] };
+    data = { name: "milford", address: [ "the street" ] };
 
     valid();
 
@@ -102,7 +102,7 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
     schema = s.Or(s.And(s.Object({ required_properties: { version: s.Constant("1") } }), v1),
                   s.And(s.Object({ required_properties: { version: s.Constant("2") } }), v2));
 
-    data = { version: "1", name: "marco", address: null };
+    data = { version: "1", name: "milford", address: null };
     valid();
 
     /* but wow, that's an unreadable mess. it'd be much cleaner if we
@@ -118,16 +118,16 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     /* that's better. now see what happens with some data: */
 
-    data = { version: "1", name: "marco", address: null };
+    data = { version: "1", name: "milford", address: null };
     valid();
 
-    data = { version: "2", name: "marco", address: null };
+    data = { version: "2", name: "milford", address: null };
     invalid();
 
-    data = { version: "2", name: "marco", address: [ "the street" ] };
+    data = { version: "2", name: "milford", address: [ "the street" ] };
     invalid();
 
-    data = { version: "2", name: "marco", address: [ "the street" ], age: 63 };
+    data = { version: "2", name: "milford", address: [ "the street" ], age: 63 };
     valid();
 
     } }); });
