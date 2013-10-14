@@ -321,12 +321,12 @@ var jsoSchema = (function () {
     };
 
     s.Record = function Record (required_properties) {
-        return Object({ required_properties: required_properties, 
-                        allow_other_properties: false });
+        return s.Object({ required_properties: required_properties,
+                          allow_other_properties: false });
     };
 
     s.HashTable = function HashTable () {
-        return Object({ allow_other_properties: true });
+        return s.Object({ allow_other_properties: true });
     };
 
     /**
