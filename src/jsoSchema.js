@@ -24,7 +24,7 @@ var jsoSchema = (function () {
      * @param {schema} schema
      * @return boolean
      */
-    s.validate = function (value, schema) {
+    s.validate = function validate (value, schema) {
         return s.violatesSchema(value, schema) == false ? true : false;
     };
 
@@ -37,12 +37,12 @@ var jsoSchema = (function () {
      * @param {schema} schema
      * @return (false|{value,schema,message})
      */
-    s.violatesSchema = function (value, schema) {
+    s.violatesSchema = function violatesSchema (value, schema) {
         var error = undefined;
         var ok = false;
         schema(value,
-               function () { ok = true; },
-               function () { error = { 'value': value, 'schema': schema, 'message': [].concat(arguments) }; });
+               function TopLevelPass () { ok = true; },
+               function TopLevelFail () { error = { 'value': value, 'schema': schema, 'message': [].concat(arguments) }; });
 
         return ok ? false : error;
     };
@@ -53,8 +53,8 @@ var jsoSchema = (function () {
      * @param {...schema} conditions
      * @return {schema}
      */
-    s.And = function (conditions) {
-        return s.Every(s.copyArray(arguments));
+    s.And = function And (conditions) {
+        return s.Every(copyArray(arguments));
     };
 
     /**
@@ -63,14 +63,14 @@ var jsoSchema = (function () {
      * @param {Array.<schema>} conditions
      * @return {schema}
      */
-    s.Every = function (conditions) {
-        return function (value, p, f) {
-            var loop = function (index) {
+    s.Every = function Every (conditions) {
+        return function Every (value, p, f) {
+            var loop = function EveryLoop (index) {
                 if (index == conditions.length) {
                     p();
                 } else {
                     conditions[index](value,
-                                      function () { loop(index + 1); },
+                                      function EveryLoopNext () { loop(index + 1); },
                                       f);
                 }
             };
@@ -84,8 +84,8 @@ var jsoSchema = (function () {
      * @param {...schema} conditions
      * @return {schema}
      */
-    s.Or = function (conditions) {
-        return s.Any(s.copyArray(arguments)); 
+    s.Or = function Or (conditions) {
+        return s.Any(copyArray(arguments)); 
     };
 
     /**
@@ -94,22 +94,22 @@ var jsoSchema = (function () {
      * @param {Array.<schema>} conditions
      * @return {schema}
      */
-    s.Any = function (conditions) {
-        return function (value, p, f) {
-            var loop = function (index) {
+    s.Any = function Any (conditions) {
+        return function Any (value, p, f) {
+            var loop = function AnyLoop (index) {
                 if (index == conditions.length) {
                     f();
                 } else {
                     conditions[index](value,
                                       p,
-                                      function () { loop(1 + index); });
+                                      function AnyLoopNext () { loop(1 + index); });
                 }
             };
             loop(0);
         };
     };
 
-    s.If = function (condition, then, els) {
+    s.If = function If (condition, then, els) {
         return s.Or(s.And(condition, then), els);
     };
 
@@ -118,8 +118,8 @@ var jsoSchema = (function () {
      * @param {function(*):boolean} valueCheck
      * @return {schema}
      */
-    s.Condition = function (valueCheck) {
-        return function(value, p, f) {
+    s.Condition = function Condition (valueCheck) {
+        return function Condition (value, p, f) {
             return valueCheck(value) ? p() : f(value, " did not return true from ", valueCheck);
         };
     };
@@ -133,7 +133,7 @@ var jsoSchema = (function () {
      * @param {*} value
      * @return {string}
      */
-    s.typeOf = function(value) {
+    s.typeOf = function typeOf (value) {
         var s = typeof value;
         if (s === 'object') {
             if (value) {
@@ -151,14 +151,14 @@ var jsoSchema = (function () {
      * @param {string} typeName
      * @return {schema}
      */
-    s.OfType = function (typeName) {
-        return s.Condition(function (value) { return s.typeOf(value) == typeName; });
+    s.OfType = function OfType (typeName) {
+        return s.Condition(function OfTypeCondition (value) { return s.typeOf(value) == typeName; });
     };
 
     /**
      * @return {schema}
      */
-    s.Number = function () {
+    s.Number = function Number () {
         return s.OfType("number");
     };
 
@@ -166,52 +166,67 @@ var jsoSchema = (function () {
      * @param {number} lowerBound
      * @return {schema}
      */
-    s.GreaterThan = function (lowerBound) {
-        return s.And(s.Number(), s.Condition(function (/**number*/ value) { return lowerBound < value; }));
+    s.GreaterThan = function GreaterThan (lowerBound) {
+        return s.And(s.Number(), 
+                     s.Condition(function GreaterThanCondition (/**number*/ value) { 
+                         return lowerBound < value; 
+                     }));
     };
 
     /**
      * @param {number} lowerBound
      * @return {schema}
      */
-    s.GreaterThanEqual = function (lowerBound) {
-        return s.And(s.Number(), s.Condition(function (/**number*/value) { return lowerBound <= value; }));
+    s.GreaterThanEqual = function GreaterThanEqual (lowerBound) {
+        return s.And(s.Number(), 
+                     s.Condition(function GreaterThanEqualCondition (/**number*/value) { 
+                         return lowerBound <= value; 
+                     }));
     };
 
     /**
      * @param {number} upperBound
      * @return {schema}
      */
-    s.LessThan = function (upperBound) {
-        return s.And(s.Number(), s.Condition(function (/**number*/value) { return value < upperBound; }));
+    s.LessThan = function LessThan (upperBound) {
+        return s.And(s.Number(), 
+                     s.Condition(function LessThanCondition (/**number*/value) { 
+                         return value < upperBound; 
+                     }));
     };
 
     /**
      * @param {number} upperBound
      * @return {schema}
      */
-    s.LessThanEqual = function (upperBound) {
-        return s.And(s.Number(), s.Condition(function (/**number*/value) { return value <= upperBound; }));
+    s.LessThanEqual = function LessThanEqual (upperBound) {
+        return s.And(s.Number(),
+                     s.Condition(function LessThanEqualCondition (/**number*/value) { 
+                         return value <= upperBound; 
+                     }));
     };
 
     /**
      * @return {schema}
      */
-    s.Integer = function () {
-        return s.And(s.Number(), s.Condition(function (/**number*/value) { return value % 1 == 0; }));
+    s.Integer = function Integer () {
+        return s.And(s.Number(), 
+                     s.Condition(function IntegerCondition (/**number*/value) { 
+                         return value % 1 == 0; 
+                     }));
     };
 
     /**
      * @return {schema}
      */
-    s.String = function () {
+    s.String = function String () {
         return s.OfType("string");
     };
 
     /**
      * @return {schema}
      */
-    s.Boolean = function () {
+    s.Boolean = function Boolean () {
         return s.OfType("boolean");
     };
 
@@ -219,49 +234,56 @@ var jsoSchema = (function () {
      * @param {string|RegExp} re
      * @return {schema}
      */
-    s.Test = function (re) {
+    s.Test = function Test (re) {
         if (s.typeOf(re) == "string") {
             re = new RegExp(re);
         }
-        return s.And(s.String(), s.Condition(function (value) { return re.exec(value) != null; }));
+        return s.And(s.String(), 
+                     s.Condition(function TestCondition (value) {
+                         return re.exec(value) != null; 
+                     }));
     };
 
     /**
      * @param {Array.<*>} values
      * @return {schema}
      */
-    s.OneOf = function (values) {
+    s.OneOf = function OneOf (values) {
         var set = { };
         var i;
         for (i = 0; i < values.length; i++) {
             set[values[i]] = true;
         }
-        return s.Condition(function (value) { return set.hasOwnProperty(value); });
+        return s.Condition(function OneOfCondition (value) { 
+            return set.hasOwnProperty(value);
+        });
     };
 
     /**
      * @param {...*} var_args
      * @return {schema}
      */
-    s.Enum = function (var_args) {
-        return s.OneOf(s.copyArray(arguments));
+    s.Enum = function Enum (var_args) {
+        return s.OneOf(copyArray(arguments));
     };
 
     /**
      * @param {*} value
      * @return {schema}
      */
-    s.Constant = function (value) {
-        return s.Condition(function (v) { return v === value; });
+    s.Constant = function Constant (value) {
+        return s.Condition(function ConstantCondition (v) { 
+            return v === value; 
+        });
     };
 
-    s.Object = function (spec) {
+    s.Object = function Object (spec) {
         var conditions = [ ];
 
         var required_properties = spec.required_properties || { };
         forIn(required_properties,
               function (schema, property_name) {
-                  conditions.push(function (value, p, f) {
+                  conditions.push(function ObjectRequiredProperty (value, p, f) {
                       if (value.hasOwnProperty(property_name)) {
                           schema(value[property_name], p, f);
                       } else {
@@ -273,7 +295,7 @@ var jsoSchema = (function () {
         var optional_properties = spec.optional_properties || { };
         forIn(optional_properties,
               function (schema, property_name) {
-                  conditions.push(function (value, p, f) {
+                  conditions.push(function ObjectOptionalProperty (value, p, f) {
                       if (value.hasOwnProperty(property_name)) {
                           schema(value[property_name], p, f);
                       } else {
@@ -284,7 +306,7 @@ var jsoSchema = (function () {
 
         var allow_other_properties = s.typeOf(spec.allow_other_properties) === "undefined" ? true : spec.allow_other_properties;
         if (! allow_other_properties) {
-            conditions.push(s.Condition(function (value) {
+            conditions.push(s.Condition(function ObjectAllowOtherProperties (value) {
                 var value_properties = { };
                 forIn(value, function (v, property) { value_properties[property] = true; });
         
@@ -298,12 +320,12 @@ var jsoSchema = (function () {
         return s.Every(conditions);
     };
 
-    s.Record = function (required_properties) {
+    s.Record = function Record (required_properties) {
         return Object({ required_properties: required_properties, 
                         allow_other_properties: false });
     };
 
-    s.HashTable = function () {
+    s.HashTable = function HashTable () {
         return Object({ allow_other_properties: true });
     };
 
@@ -312,7 +334,7 @@ var jsoSchema = (function () {
      * @param {schema=} length_schema
      * @return {schema}
      */
-    s.Array = function (item_schema, length_schema) {
+    s.Array = function Array (item_schema, length_schema) {
         if (arguments.length == 0) {
             throw new Error("Missing required argument item_schema");
         }
@@ -320,16 +342,16 @@ var jsoSchema = (function () {
             length_schema = s.Pass();
         }
         return s.And(s.OfType("array"),
-                   function (value, p, f) {
+                   function ArrayLength (value, p, f) {
                        length_schema(value.length, p, f);
                    },
-                   function (value, p, f) {
-                       var loop = function (index) {
+                   function ArrayItem (value, p, f) {
+                       var loop = function ArrayItemLoop (index) {
                            if (index == value.length) {
                                p();
                            } else {
                                item_schema(value[index],
-                                              function () {
+                                              function ArrayItemLoopNext () {
                                                   loop(index + 1);
                                               },
                                               f);
@@ -339,25 +361,25 @@ var jsoSchema = (function () {
                    });
     };
 
-    s.Tuple = function (items) {
-        items = s.copyArray(arguments);
+    s.Tuple = function Tuple (items) {
+        items = copyArray(arguments);
         return s.And(s.OfType("array"),
-                   function (value, p, f) {
-                       if (items.length != value.length) {
-                           f("Wrong number f elements in tuple",value,"expected",items.length);
-                       } else {
-                           var loop = function (index) {
-                               if (value.length == index) {
-                                   p();
-                               } else {
-                                   items[index](value[index],
-                                                function () { loop(index + 1); },
-                                                f);
-                               }
-                           };
-                           loop(0);
-                       };
-                   });
+                     function Tuple (value, p, f) {
+                         if (items.length != value.length) {
+                             f("Wrong number f elements in tuple",value,"expected",items.length);
+                         } else {
+                             var loop = function TupleLoop (index) {
+                                 if (value.length == index) {
+                                     p();
+                                 } else {
+                                     items[index](value[index],
+                                                  function TupleLoopNext () { loop(index + 1); },
+                                                  f);
+                                 }
+                             };
+                             loop(0);
+                         };
+                     });
     };
 
     s.Nullable = function (schema) {
@@ -365,17 +387,17 @@ var jsoSchema = (function () {
     };
 
     s.Pass = function () { 
-        return function (value,p,f) { return p(); }; 
+        return function Pass (value,p,f) { return p(); }; 
     };
 
     s.Fail = function () { 
-        var message = s.copyArray(arguments); 
-        return function (value,p,f) { 
+        var message = copyArray(arguments); 
+        return function Fail (value,p,f) { 
             return f.apply(f, message); 
         }; 
     };
 
-    s.copyArray = function (array) {
+    function copyArray (array) {
         return [].slice.call(array, 0);
     };
 
