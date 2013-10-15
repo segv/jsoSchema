@@ -70,7 +70,7 @@ require([ 'jso/Schema' ], function (s) {
   schema.validate({ name: "Milhouse", age: 63 }); // returns true
   schema.validate({ name: "Milhouse", age: "none-given" }); // returns true
   schema.validate({ name: "Milhouse", age: false }); // returns false
-  schema.validate({ name: "Milhouse", age: -4 }); // returns false
+  schema.validate({ name: "Milhouse", age: -4 }); // returns true
 
   var age_constraint = s.Condition(function (value) {
     return 23 <= value.age && value.age <= 32;
@@ -81,20 +81,20 @@ require([ 'jso/Schema' ], function (s) {
 
   schema.validate({ age: 20 }); // returns false
   schema.validate({ age: "none-given" }); // returns true
-  schema.validate({ age: 25 }); // returns type
+  schema.validate({ age: 25 }); // returns true
   schema.validate({ age: 35 }); // returns false
 
 
 });
 ----
 
-== Generators ==
+== Schema Generators ==
 
 Read to code if you want all the details (the code, and not this
 README, is what you're actually using, so you you should read that
 anyway), but here's a, probably inaccurate and incomplete, summary.
 
-=== Value Conditions ===
+=== Values ===
 
 Number(), String(), Boolean()::
   Checks that the given value's +typeof+ is +"number"+, +"string"+ or +"boolean"+ respectively
@@ -109,34 +109,63 @@ OneOf(values)::
 Condition(function)::
   Checks that +function+, when applied to the given value, returns a truthy value.
 
-=== Objects (and Arrays) ===
+=== Objects ===
 
-Record(properties):: Checks that the given value is an object, with
-  the same set of properties as +properties+ (no more, no less), and
-  that each of the given value's property value checks against the
-  schema in +properties+.
+Record(properties), Record(properties, optional_properties):: Checks
+  that the given value is an object, with the same set of properties
+  as +properties+ (no more, no less), and that each of the given
+  value's property value checks against the schema in +properties+. If
+  the +optional_properties+ argument is present it is passed to the
+  underlying +Object+ schema.
+
+  Equivalent to `Object({ required_properties: properties,
+  optional_properties: optional_properties, allow_other_properties:
+  false })`
 
 HashTable():: Simply checks that the given value is an object.
 
-Object(description)::
+Object(description):: description is an object with three properties:
+  
+  required_properties:: a hash table (another object) mapping property
+    names to schemas. if the given property is found the corresponding
+    schema will be used, if the property is not found or the schema
+    fails, the Object schema fails.
+
+  optional_properties:: similar to `required_properties`, a hash table
+    mapping property names to schemas, but if the property isn't found
+    we don't immediately fail (if the property is found, then the
+    schema does have to match the property's value).
+  
+  allow_other_properties:: a boolean specifying if properties not
+    explicitly mentioned in `required_properties` or
+    `optional_properties` are allowed. defaults to true.
+
+=== Arrays ===
 
 Array(item), Array(item, length):: Checks that the given value is an
   array, that the value's length checks against +length+ (optional,
   defaults to just +Pass()+) and that each time checks against +item+.
   
-Tuple(...items)::
-  An array of length items where each element passes the corresponding item
+Tuple(...items):: An array of length items where each element passes
+  the corresponding item schema.
 
-=== Schema Combiners ===
+=== Schema Generators ===
 
-Or(a,b)::
-  If a passes, the Or passes, otherwise b will be tested.
+Or(a,b):: Creates a schema which passes if either the schema +a+ or
+  the schema +b+ pass. Like the normal +||+ operator, schema +b+ will
+  be tested only if +a+ fails.
+
 Any(conditions)::
-  N-argument version of Or.
+  N-argument version of Or. +conditions+ is simply an array of
+  schemas, we stop checking as soon as one of the passes, if none of
+  them do we fail.
+
 And(a,b)::
-  If a passes b will be tested, otherwise the And fails.
+  If the schemas +a+ and +b+ pass, the +And+ schema passes. If +a+
+  fails +b+ will not be tested.
+
 Every(conditions)::
-  N-argument version of And
+  N-argument version of +And+.
 
 == Compared to JSON schema ==
 
