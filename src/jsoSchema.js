@@ -42,7 +42,7 @@ var jsoSchema = (function () {
         var ok = false;
         schema(value,
                function TopLevelPass () { ok = true; },
-               function TopLevelFail () { error = { 'value': value, 'schema': schema, 'message': [].concat(arguments) }; });
+               function TopLevelFail () { error = { 'value': value, 'schema': schema, 'message': copyArray(arguments) }; });
 
         return ok ? false : error;
     };
