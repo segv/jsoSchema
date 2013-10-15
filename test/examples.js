@@ -96,6 +96,13 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     valid();
 
+    /* Schemas also have an annoying tendancy to change over time, and
+     * we need a way to accept two different kinds of data: in version
+     * 1 (and, fortunetely we do have a version marker) the address is
+     * a an array of strings or null, in version 2 the address has to
+     * be an array of strings and we also require an age property
+     * whose value is an Integer: */
+
     var v1 = s.Record({ version: s.Constant("1"), name: s.String(), address: Nullable(StringArray())                  });
     var v2 = s.Record({ version: s.Constant("2"), name: s.String(), address:          StringArray(), age: s.Integer() });
 

@@ -90,7 +90,7 @@ require([ 'jso/Schema' ], function (s) {
 
 == Schema Generators ==
 
-Read to code if you want all the details (the code, and not this
+Read the code if you want all the details (the code, and not this
 README, is what you're actually using, so you you should read that
 anyway), but here's a, probably inaccurate and incomplete, summary.
 
@@ -101,7 +101,7 @@ Number(), String(), Boolean()::
 OfType(typeName)::
   Checks that the given values's +typeof+ is +==+ to +typeName+
 Constant(value)::
-  Checks that the given value is +===+ to +value+.E
+  Checks that the given value is +===+ to +value+.
 Enum(...values)::
   Checks that the given value is one of elements of +values+ (as per +===+). This is simply a convenience around OneOf.
 OneOf(values)::
@@ -117,26 +117,25 @@ Record(properties), Record(properties, optional_properties):: Checks
   value's property value checks against the schema in +properties+. If
   the +optional_properties+ argument is present it is passed to the
   underlying +Object+ schema.
+  +
+  Equivalent to:
 
-  Equivalent to `Object({ required_properties: properties,
-  optional_properties: optional_properties, allow_other_properties:
-  false })`
+  Object({ required_properties: properties, 
+           optional_properties: optional_properties, 
+           allow_other_properties: false })
 
 HashTable():: Simply checks that the given value is an object.
 
 Object(description):: description is an object with three properties:
-  
-  required_properties:: a hash table (another object) mapping property
+  required_properties;; a hash table (another object) mapping property
     names to schemas. if the given property is found the corresponding
     schema will be used, if the property is not found or the schema
     fails, the Object schema fails.
-
-  optional_properties:: similar to `required_properties`, a hash table
+  optional_properties;; similar to `required_properties`, a hash table
     mapping property names to schemas, but if the property isn't found
     we don't immediately fail (if the property is found, then the
-    schema does have to match the property's value).
-  
-  allow_other_properties:: a boolean specifying if properties not
+    schema does have to match the property's value).  
+  allow_other_properties;; a boolean specifying if properties not
     explicitly mentioned in `required_properties` or
     `optional_properties` are allowed. defaults to true.
 
