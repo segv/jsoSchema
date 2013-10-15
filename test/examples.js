@@ -96,8 +96,8 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
 
     valid();
 
-    var v1 = s.Record({ version: s.Constant("1"), name: s.String(), address: Nullable(StringArray()) });
-    var v2 = s.Record({ version: s.Constant("2"), name: s.String(), address: StringArray(), age: s.Integer() });
+    var v1 = s.Record({ version: s.Constant("1"), name: s.String(), address: Nullable(StringArray())                  });
+    var v2 = s.Record({ version: s.Constant("2"), name: s.String(), address:          StringArray(), age: s.Integer() });
 
     schema = s.Or(s.And(s.Object({ required_properties: { version: s.Constant("1") } }), v1),
                   s.And(s.Object({ required_properties: { version: s.Constant("2") } }), v2));
@@ -111,6 +111,27 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
     var IfVersion = function (version, schema) {
         return s.And(s.Object({ required_properties: { version: s.Constant(version) } }), 
                      schema);
+    };
+
+    schema = s.Or(IfVersion("1", v1),
+                  IfVersion("2", v2));
+
+    /* but IfVersion, while correct, is still kinda messy. What we
+     * want to say is that the object will have a property called
+     * version and this property must be equal to whatever string we
+     * expect to see. Saying that, using jsoSchema's built in schema
+     * generators, isn't quite as direct as we'd like. Let's use the
+     * Condition schema so that we can say exactly what we need to
+     * say, and no more: */
+
+    var hasVersion = function (expectedVersion) {
+        return s.Condition(function (value) { 
+            return value.version === expectedVersion;
+        });
+    };
+
+    IfVersion = function (version, schema) {
+        return s.And(hasVersion(version), schema);
     };
 
     schema = s.Or(IfVersion("1", v1),
