@@ -79,7 +79,7 @@ var jsoSchema = (function () {
     };
 
     /**
-     * 2 argument Any
+     * Short circuiting or.
      *
      * @param {...schema} conditions
      * @return {schema}
@@ -114,7 +114,8 @@ var jsoSchema = (function () {
     };
 
     /** 
-     * Helper function for simple tests
+     * Helper function for simple tests.
+     *
      * @param {function(*):boolean} valueCheck
      * @return {schema}
      */
@@ -277,6 +278,10 @@ var jsoSchema = (function () {
         });
     };
 
+    /**
+     * @param {{required_properties, optional_properties, allow_other_properties}} spec
+     * @return {schema}
+     */
     s.Object = function Object (spec) {
         var conditions = [ ];
 
@@ -395,6 +400,9 @@ var jsoSchema = (function () {
                      });
     };
 
+    /**
+     * Allow the value null, or the parameter schema.
+     */
     s.Nullable = function (schema) {
         return s.Or(s.Constant(null), schema);
     };
