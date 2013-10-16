@@ -320,9 +320,22 @@ var jsoSchema = (function () {
         return s.Every(conditions);
     };
 
-    s.Record = function Record (required_properties) {
+    /**
+     * Creates a schema for record objects. Records are, a bit like C
+     * structs, objects with known, and constant, property names. The
+     * optional_properties and allow_other_properties arguments are
+     * passed to the Object constructor. Note the different default
+     * value, false, for allow_other_properties.
+     *
+     * @param {Object} required_properties
+     * @param {Object|undefined} optional_properties
+     * @param {boolean|undefined} allow_other_properties
+     * @return {schema}
+     */
+    s.Record = function Record (required_properties, optional_properties, allow_other_properties) {
         return s.Object({ required_properties: required_properties,
-                          allow_other_properties: false });
+                          optional_properties: optional_properties || { },
+                          allow_other_properties: s.typeOf(allow_other_properties) === "undefined" ? false : allow_other_properties });
     };
 
     s.HashTable = function HashTable () {
