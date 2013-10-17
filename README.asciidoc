@@ -316,9 +316,6 @@ schema (so this is actually a schema combiner or generator) and
 returns a schema that return the opposite of the input schema,
 procedurally, we want this:
 
- passes when the input schema fails and fails
-when the input schema passes.
-
 [source,javascript]
 ----
 var negate = function (schema) {
