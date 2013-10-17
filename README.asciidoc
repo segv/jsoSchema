@@ -192,40 +192,99 @@ This code vs data approach has two important consequences:
 
 If your schema can be expressed as a singe condition on a single
 value, just use the Condition schema and be done with it. Otherwise,
-read on, and may God have mercy on your soul (unless you eat
-continuations for breakfast, then, gutten appetite).
+read on.
 
-A jso schema is just a 3 argument function: the value to validate,
-what to do if the value is valid, and what to do if the value is
-invalid. 
-
-Let's pretend, as an example, that you wanted to write the And schema
-combiner, but it didn't already exist (what we'll write in this
-example is equivalent to the built in And combiner). You might be
-tempted to write this:
+A jso schema is a function which takes three arguments (its return
+value is unspecified, and no piece of the jsoSchema depends on the
+schema's return value):
 
 [source,javascript]
 ----
-  function (a, b) {
-    return function (value, p, f) {
-      a(value) && b(value) ? p() : f();
-    }
-  }
+var schema = function (value, pass, fail) { ... }
 ----
 
-I can see where you're coming from, and I understand what's going on
-in your head, but you're wrong. The problem is in the calls to
-`a(value)` and `b(value)`, both of those functions also take a p and f
-parameter, but what do we pass them? The thing to realize is that
-calling another validator function, or calling `p` or `f`, has to be
-the last thing a validator function does (we could enforce this
-programatticaly, but it'd make debugging the code a huge pain in the
-ass).
++value+ is, surprisingly enough, the javascript object we want to test
+the schema on. +pass+ is a function, which itself takes no arguments,
+and should be called if +value+ matches (or passes or satisifies or
+whatever) the schema. +fail+ is a function which should be called if
++value+ does not pass the schema.
 
-so, in this case, we'd like to call `a`, and if that returns true,
-then call `b`, but our rule says the call to `a`, which is itself a
-validator, has to be the last thing our function does. how can we do
-that?
+so, as an example, a schema to check if a value is even would look
+like this:
+
+[source,javascript]
+----
+var isEven = function (value, pass, fail) {
+  if (value % 2 == 0) {
+    pass();
+  } else 
+    fail(value, " is not divisible by 2");
+  }
+}
+----
+
+It's important here to notice two things:
+
+1. we tell the rest of the validator that we've matched (or not) by
+   calling the function pass (or fail).
+
+2. our schema does not do anything after having called pass or fail.
+
+3. (this is something you should know but it's not obvious from the
+   above code) a schema function may be called multiple times on the
+   same value.
+
+The reason for these constraints are slightly beyond the scope of this
+README (google "Continuation Passing Style" if you're really curious),
+but it is important to keep them present when writing new schema
+generator functions.
+
+As a slightly more complicated example, let's try and implement a
+schema function which checks if its value is an array of unique
+items. we'll start, just because this is a README, with the code which
+does exactly what we'd like to check:
+
+[source,javascript]
+----
+var uniqueElements = function (array) {
+  var i, set = { };
+  for (i = 0; i < array.length; i++) {
+    if (set[array[i]]) {
+      return false;
+    }
+    set[array[i]] = true;
+  }
+  return true;
+}
+----
+
+This is a, very simple, function which returns true if all the
+elements of an array a unique (as per +===+) and false otherwise. NB:
+We've implicitly decided that a zero length array is unique.
+
+As a first attempt, we'll just change this function and add in the
+parameters +pass+ and +fail+, and call +pass+ when we have returned
+true and call +fail+ when we would have returned +false+:
+
+[source,javascript]
+----
+var uniqueElements = function (array, pass, fail) {
+  var i, set = { };
+  for (i = 0; i < array.length; i++) {
+    if (set[array[i]]) {
+      fail(); // was return false
+    }
+    set[array[i]] = true;
+  }
+  pass(); // was return true
+}
+---
+
+The problem with this implementation is that it will call fail once
+for every duplicate element, and then, no matter what, it'll call pass
+at the end. that obviously doesn't make any sense (and, if our
+pass/fail function do logging or have side effects we'll be
+introducing bugs), so let's change it to:
 
 the thing to realize is that a takes, as an input parameter, a
 function that it will call if the value checks. that's where we can
@@ -233,27 +292,160 @@ put our logic for calling b. so instead of this:
 
 [source,javascript]
 ----
-  a(value) && b(value)
-----
+var uniqueElements = function (array, pass, fail) {
+  var i, set = { };
+  for (i = 0; i < array.length; i++) {
+    if (set[array[i]]) {
+      return fail(); // was return false
+    }
+    set[array[i]] = true;
+  }
+  return pass(); // was return true
+}
+---
 
-we have:
+by using the return statement we're stopping the execution of this
+function as soon as we find a single duplicate, and that's exactly
+what we want. we don't know what value fail or pass, and therefore
+function, actually return, but, by definition of the schema api, it
+doesn't matter.
+
+Let's take another, slightly more complicated (at least conceptually)
+example: negation. we want a schema function which takes as input a
+schema (so this is actually a schema combiner or generator) and
+returns a schema that return the opposite of the input schema,
+procedurally, we want this:
+
+ passes when the input schema fails and fails
+when the input schema passes.
 
 [source,javascript]
 ----
-  a(value,
-    function () { b(value, 
-                    p); })
-----
+var negate = function (schema) {
+  return function (value, pass, fail) {
+    if ( ! schema(value) ) { 
+      pass()
+    } else {
+      fail()
+    }
+  }
+}
+---
 
-though we are still not telling a what to do if it fails, fortunetely
-that's easy, if `a` fails then we fail, and our `f` parameter is what
-to do if we fail. applying the same reasoning to b:
+this code, as written, has a few problems:
+
+1. schema, by definition of the schema api, doesn't return a value, so
+   we can't test its return value for true/false ness.
+
+2. schema, also by definition, takes three arguments, a value, a pass
+   function and a fail function, but here we're only passing in the
+   value. what could we pass to schema as its pass or fail function?
+   how can we pass in the then branch of the if we're in? does that
+   even make any sense? obviously there's a problem here.
+
+We need to look at this problem differently (and, if you understand
+continuations or continuation passing style, this should be
+obvious). The thing to notice is that we're already given a schema,
+and we don't have any extra checks of our own, we just want to do
+something differently depending on whether or not schema matches;
+well, it turns out that we can just use schema's pass and fail
+arguments to do exactly that:
 
 [source,javascript]
 ----
-  a(value,
-    function () { b(value, 
-                    p,
-                    f); },
-    f)
+var negate = function (schema) {
+  return function (value, pass, fail) {
+    schema(value,
+           function () { fail(); },
+           function () { pass(); });
+}
+---
+
+so now +schema+ will do whatever it normally does, and if that passes
+it'll call our fail function, if +schema+ fails it'll call our +pass+
+function. perfect. finally, we could simplify the code a little bit:
+
+[source,javascript]
 ----
+var negate = function (schema) {
+  return function (value, pass, fail) {
+    schema(value, fail, pass);
+}
+---
+
+now, one last example, xor (given a list of schema, match exactly
+one). as with negate we'll start with the simple (but wrong) version:
+
+[source,javascript]
+----
+var xor = function (schemas) {
+  return function (value, pass, fail) {
+    var i, num_matches = 0;
+    for (i = 0; i < schema.length; i++) {
+      if (schemas[i](value)) {
+        num_matches++;
+      }
+    }
+    return num_matches == 1;
+  }
+}
+---
+
+this one is a bit more complicated, we need to test all the schemas on
+our value, we need to count how many match, and, finally, if exactly
+one of them matches then we pass, other wise we fail. we need to do
+this but the only control flow tool we have is the function(s) we pass
+to the schemas, and we can't pass a bit of a loop (we could if we had
+call_with_current_continuation, but we don't), but let's try it and
+see how it looks:
+
+[source,javascript]
+----
+var xor = function (schemas) {
+  return function (value, pass, fail) {
+    
+    var i, num_matches = 0;
+    for (i = 0; i < schema.length; i++) {
+      schemas[i](value, 
+                 function () { num_matches++; }, 
+                 function () { });
+    }
+    num_matches == 1 ? pass() : fail();
+  }
+}
+---
+
+seems reasonable enough, call each schema on the value, if the schema
+passes tell it to increment num_matches, otherwise do
+nothing. finally, if exactly one schema matched, call pass, otherwise
+call fail. this implementation actually works in a lot of cases, but
+there are certain cases, and while it's pretty uncommon when you do
+need it that's the only thing that will work, where we want to go back
+and try to fail (or pass) where we'd previously passed (or failed) so
+that a later schema can pass (or fail) and the whole thing can pass.
+
+for that reason we need to restructure that code so that whenever our
+xor functions call either pass, fail _or_ a schema, that's the last
+thing it does:
+
+[source,javascript]
+----
+var xor = function (schemas) {
+  return function (value, pass, fail) {
+    var loop = function (i, num_matches) {
+      if (i == schemas.length) {
+        num_matches == 1 ? pass() : fail();
+      } else {
+        schemas[i](value,
+                   function () { loop(i + 1, num_matches + 1); },
+                   function () { loop(i + 1, num_matches); });
+      }
+    };
+    loop(0, 0);
+  }
+}
+---
+
+This has gone way beyond what should go in a README, so we're just
+going to leave it there. Submit an issue on github if you have some
+suggestions as to how to explain this corner of jsoSchema, thanks.
