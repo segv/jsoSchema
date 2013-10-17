@@ -69,6 +69,7 @@ release:
 	find build/min build/raw -name "*.js" -print0 | xargs -0 git add -f
 	echo $(VERSION) > ./VERSION
 	git add VERSION
+	make test
 
 build/README.html: README.asciidoc
 	mkdir -p $(dir $@)
