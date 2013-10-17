@@ -278,7 +278,7 @@ var uniqueElements = function (array, pass, fail) {
   }
   pass(); // was return true
 }
----
+----
 
 The problem with this implementation is that it will call fail once
 for every duplicate element, and then, no matter what, it'll call pass
@@ -302,7 +302,7 @@ var uniqueElements = function (array, pass, fail) {
   }
   return pass(); // was return true
 }
----
+----
 
 by using the return statement we're stopping the execution of this
 function as soon as we find a single duplicate, and that's exactly
@@ -330,7 +330,7 @@ var negate = function (schema) {
     }
   }
 }
----
+----
 
 this code, as written, has a few problems:
 
@@ -359,7 +359,7 @@ var negate = function (schema) {
            function () { fail(); },
            function () { pass(); });
 }
----
+----
 
 so now +schema+ will do whatever it normally does, and if that passes
 it'll call our fail function, if +schema+ fails it'll call our +pass+
@@ -371,7 +371,7 @@ var negate = function (schema) {
   return function (value, pass, fail) {
     schema(value, fail, pass);
 }
----
+----
 
 now, one last example, xor (given a list of schema, match exactly
 one). as with negate we'll start with the simple (but wrong) version:
@@ -389,7 +389,7 @@ var xor = function (schemas) {
     return num_matches == 1;
   }
 }
----
+----
 
 this one is a bit more complicated, we need to test all the schemas on
 our value, we need to count how many match, and, finally, if exactly
@@ -413,7 +413,7 @@ var xor = function (schemas) {
     num_matches == 1 ? pass() : fail();
   }
 }
----
+----
 
 seems reasonable enough, call each schema on the value, if the schema
 passes tell it to increment num_matches, otherwise do
@@ -444,7 +444,7 @@ var xor = function (schemas) {
     loop(0, 0);
   }
 }
----
+----
 
 This has gone way beyond what should go in a README, so we're just
 going to leave it there. Submit an issue on github if you have some
