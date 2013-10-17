@@ -47,8 +47,6 @@ requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) { buster
      * more specific: we'll allow null, or an array of strings of
      * length > 0 */
 
-    /* oh, wait, they have to have an age too: */
-
     schema = s.Record({ name: s.String(),
                         address: s.Array(s.String(), s.GreaterThan(0)) });
 
