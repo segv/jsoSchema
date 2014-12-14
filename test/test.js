@@ -1,143 +1,204 @@
-var requirejs = require('requirejs');
-requirejs([ '../build/min/jso/Schema', 'buster' ], function (s, buster) {
+/*global require, suite, test */
+'use strict';
 
-    var valid   = function (value, schema) { buster.assert(s.validate(value, schema)); };
-    var invalid = function (value, schema) { buster.refute(s.validate(value, schema)); };
+var assert = require('chai').assert;
 
-    buster.testCase("jsoSchema", {
-        "conditions": function () {
-            valid(0, s.Condition(function (value) { return value == 0; }));
-        },
-        "number" : function () {
-            valid(0, s.Number());
-            valid(0 + 0, s.Number());
-            valid(1.0, s.Number());
-            valid(Math.random(), s.Number());
-            invalid("", s.Number());
-            invalid("a", s.Number());
-            invalid({}, s.Number());
-            invalid(null, s.Number());
-        },
-        "numberConditions": function () {
-            valid(1, s.GreaterThan(0));
-            valid(1, s.GreaterThanEqual(1));
-            valid(1, s.LessThan(2));
-            valid(1, s.LessThanEqual(1));
-        },
-        "integer": function () {
-            valid(0, s.Integer());
-            valid(-0, s.Integer());
-            valid(-1, s.Integer());
-            valid(1, s.Integer());
-            valid(Number.MAX_VALUE, s.Integer());
-        },
-        "array": function () {
-            valid([ 1 ], s.Array(s.Number()));
-            valid( [ "" ],s.Array(s.String()));
-            invalid( [ "" ],s.Array(s.Number()));
-            valid([], s.Array(s.Pass()));
-            // the array validator shouldn't be called for a 0 length array
-            valid([], s.Array(s.Fail()));
+var s = require('../build/jsoSchema.min');
 
-            valid(new Array(), s.Array(s.Pass()));
-            valid([1,2,3], s.Array(s.Number()));
-            valid((function () { return [].slice.call(arguments); })(1,2,3), s.Array(s.Number()));
+var l = function (prefix, value) {
+  console.log(prefix, require('util').inspect(value, true, 1000));
+};
 
-            var digit_list = s.Array(s.Or(s.Number(), s.Test(/^\d+$/)),
-                                     s.GreaterThan(0));
+suite('simple schemas');
 
-            valid([1], digit_list);
-            valid([1,"2",3], digit_list);
-            valid([1,2,3,4], digit_list);
-            invalid([1,{},3,4], digit_list);
-            invalid([], digit_list);
-            invalid({ 2: undefined }, digit_list);
-            
-        },
-        "string": function () {
-            valid("", s.String());
-            valid("A", s.String());
-            invalid(0, s.String());
-            valid(typeof(0), s.String());
-            valid("aaab", s.Test("^a+b+$"));
-        },
-        "ofType": function () {
-            valid("", s.OfType("string"));
-            invalid("", s.OfType("object"));
-            invalid(s, s.OfType("number"));
-            invalid(s, s.OfType("undefined"));
-            valid(s, s.OfType("object"));
-            valid(s.OfType, s.OfType("function"));
-            valid(undefined, s.OfType("undefined"));
-            valid({}['foo'], s.OfType("undefined"));
-        },
-        "constant": function () {
-            valid(1, s.Constant(1));
-        },
-        "and": function () {
-            valid(undefined, s.And(s.Pass(), s.Pass()));
-            invalid(undefined, s.And(s.Pass(), s.Fail()));
-            invalid(undefined, s.And(s.Fail(), s.Fail()));
+test('simple condition schemas work', function () {
 
-            valid(1, s.And(s.Constant(1), s.Constant(1)));
-            valid(1, s.And(s.LessThan(2), s.GreaterThan(0)));
+  assert(s.Condition(function () { return true;  }).test(undefined).match == true,
+         'always pass condition failed');
 
-            valid(1, s.And(s.And(s.Constant(1)), 
-                           s.And(), 
-                           s.And(s.Constant(1), 
-                                 s.Constant(1))));
-        },
-        "or": function () {
-            valid(undefined, s.Or(s.Pass(), s.Pass()));
-            valid(undefined, s.Or(s.Fail(), s.Pass()));
-            invalid(undefined, s.Or(s.Fail(), s.Fail()));
-            valid(1, s.Or(s.Constant(0), s.Constant(1)));
-            valid(1, s.Or(s.LessThan(0), s.GreaterThan(0)));
-        },
-        "record": function () {
-            valid({ a: 42 }, s.Record({ a: s.Number() }));
-            invalid({ b: 42 }, s.Record({ a: s.Number() }));
-            invalid({ b: 42 }, s.Record({ a: s.Pass() }));
-            invalid({ b: 42 }, s.Record({ b: s.Pass(), a: s.Pass() }));
-            valid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
-                                              allow_other_properties: true }));
-            invalid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
-                                                allow_other_properties: false }));
-            valid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
-                                              optional_properties: { c: s.Pass() },
-                                              allow_other_properties: false }));
-            invalid({ b: 42, c: 1 }, s.Object({ required_properties: { b: s.Pass() }, 
-                                                optional_properties: { c: s.Fail() },
-                                                allow_other_properties: false }));
-        },
-        "nested conditions": function () {
-            valid(1, s.Or(s.And(s.GreaterThan(0),
-                                s.GreaterThan(1)),
-                          s.And(s.LessThan(2),
-                                s.GreaterThan(0))));
+  assert(s.Condition(function () { return false; }).test(undefined).match == false,
+         'always fail condition passed');
 
-            var validator = s.Or(s.And(s.Object({ required_properties: { v: s.Constant(1) } }),
-                                       s.Record({ v: s.Constant(1), a: s.Constant(3) })),
-                                 s.And(s.Object({ required_properties: { v: s.Constant(2) } }),
-                                       s.Record({ v: s.Constant(2), b: s.String() })));
+  assert(s.Condition(function (x) { return x == 0; }).test(0).match == true,
+         '0 did not match 0');
 
-            valid({ v: 1, a: 3 }, validator);
-            valid({ v: 2, b: "3" }, validator);                               
-        },
-        "enum": function () {
-            invalid("FOO", s.Enum("A", "B", "C"));
-            invalid("FOO", s.OneOf(["A", "B", "C"]));
-            valid("B", s.Enum("A", "B", "C"));
-            valid("C", s.OneOf(["A", "B", "C"]));
-            valid("C", s.OneOf(["C"]));
-            invalid("C", s.OneOf([]));
-        },
-        "tuple": function () {
-            valid([1,2], s.Tuple(s.Number(),s.Number()));
-            invalid([1], s.Tuple(s.Number(),s.Number()));
-            invalid([1,2,3], s.Tuple(s.Number(),s.Number()));
-            invalid([1,"2"], s.Tuple(s.Number(),s.Number()));
-            invalid({}, s.Tuple(s.Number(),s.Number()));
-        }
-    });
+  assert(s.Condition(function (x) { return x == 1; }).test(1).match == true,
+         '1 did not match 1');
+
+  assert(s.Condition(function (x) { return x < 0; }).test(1).match == false,
+         '1 was less than zero');
+
+  assert(s.Condition(function (x) { return x < 0; }).test(-1).match == true,
+         '-1 mas not less than 0');
+});
+
+suite('meta info');
+
+test('can set doc', function () {
+  var l = 'a trivial schema';
+  var d = 'a trivial docstring';
+
+  var schema = s.Condition(function (value) { return false; });
+
+  schema.label(l).doc(d);
+
+  assert(schema.label() == l, 'label santiy check failed');
+  assert(schema.doc() == d, 'doc sanity check failed');
+});
+
+test('schema in trace results', function () {
+  var schema = s.Condition(function (value) { return true; });
+  var match = schema.test(undefined);
+  assert(match.trace, 'missing trace result');
+  assert(match.trace[0].schema == schema, 'schema not in trace result');
+});
+
+// leave this here to debug problems with the trace formatting, don't
+// actually want to test it.
+if (0) {
+  test('schema in complex trace results', function () {
+    var schema = s.And(s.Or(s.Condition(function (value) { return false; }).label('i am always false1'),
+                            s.Condition(function (value) { return false; }).label('i am always false2'),
+                            s.Condition(function (value) { return true; }).label('i am always true')).label('first or'),
+                       s.Or(s.GreaterThan(0)).label('second or'),
+                       s.Or(s.And(s.Condition(function (value) { return true; }).label('i am always true'),
+                                  s.Condition(function (value) { return false; }).label('i am always false')),
+                            s.Condition(function (value) { return true; }).label('i am always true')).label('third or'));
+    var match = schema.test(7);
+
+    console.log(s.formatTrace(match.trace));
+
+    assert(match.trace, 'missing trace result');
+    assert(match.trace[0].schema == schema, 'schema not in trace result');
+  });
+}
+
+suite('schemas');
+
+var plus  = s.Condition(function (x) { return x > 0;  }).label('a positive integer');
+var minus = s.Condition(function (x) { return x < 0;  }).label('a negatvie integer');
+var zero = s.Constant(0);
+var four = s.Constant(4);
+var three = s.Constant(3);
+
+var _test = function (schema, value) {
+  var test = schema.test(value);
+  test.logTrace = function () {
+    console.log(s.formatTrace(test.trace));
+  };
+  return test;
+};
+
+var _msg = function (schema, value, message) {
+  return message || (JSON.stringify(schema) + ' on ' + JSON.stringify(value));
+};
+
+var match = { };
+
+match.fail = function (schema, value, message) {
+  var test = _test(schema, value);
+  assert.notOk(test.match, _msg(schema, value, message));
+  return test;
+};
+
+match.pass = function (schema, value, message) {
+  var test = _test(schema, value);
+  assert.ok(test.match, _msg(schema, value, message));
+  return test;
+};
+
+test('any schemas work', function () {
+  var schema = s.Any([plus, minus]).label('plus or minus');
+
+  match.pass(schema, 1);
+  match.pass(schema, -1);
+
+  match.pass(schema, -1);
+  match.fail(schema, 0);
+
+  match.fail(s.Any([]), undefined);
+});
+
+test('every schemas work', function () {
+  var schema = s.Every([ plus, four ]);
+
+  assert(schema.test(4).match == true);
+  assert(schema.test(1).match == false);
+  assert(schema.test(0).match == false);
+  assert(schema.test(-1).match == false);
+
+  assert(s.Every([]).test(undefined).match == true);
+});
+
+test('backtracking1', function () {
+  var schema = s.Any([ s.Every([plus, four]),
+                       s.Every([minus, four]),
+                       s.Every([zero]) ]);
+
+  assert(schema.test( 4).match == true);
+  assert(schema.test( 0).match == true);
+  assert(schema.test( 3).match == false);
+  assert(schema.test(-1).match == false);
+});
+
+test('backtracking2', function () {
+  var schema = s.And(s.Or(minus, three),
+                     s.Or(three));
+
+  assert(schema.test( 4).match == false);
+  assert(schema.test( 3).match == true);
+  //console.log(s.formatTrace(schema.test(3).trace));
+  assert(schema.test(-1).match == false);
+});
+
+test('OfType', function () {
+  var schema = s.And(s.Or(minus, three),
+                     s.Or(three));
+
+  assert(schema.test( 4).match == false);
+  assert(schema.test( 3).match == true);
+  //console.log(s.formatTrace(schema.test(3).trace));
+  assert(schema.test(-1).match == false);
+});
+
+test('Nullable', function () {
+  var schema = s.Nullable(s.Integer());
+
+  match.pass(schema, 0);
+  match.pass(schema, 1);
+  match.pass(schema, null);
+  match.fail(schema, 'foo');
+});
+
+test('array', function () {
+  match.pass(s.Array(s.DontCare()), [ ]);
+  match.pass(s.Array(s.DontCare()), [ 1 ]);
+  match.fail(s.Array(s.DontCare()), '');
+  match.fail(s.Array(s.DontCare()), null );
+
+  match.pass(s.Array(s.Integer()), [ ]);
+  match.pass(s.Array(s.Integer()), [ 1 ]);
+  match.pass(s.Array(s.Integer()), [ 1, 2 ]);
+  match.fail(s.Array(s.Integer()), '');
+  match.fail(s.Array(s.Integer()), [ '1' ]);
+  match.fail(s.Array(s.Integer()), [ 1, '2' ]);
+
+  match.pass(s.Array(s.Integer(), s.Constant(0)), [ ]);
+  match.fail(s.Array(s.Integer(), s.Constant(1)), [ ]);
+  match.pass(s.Array(s.Integer(), s.Constant(1)), [ 1 ]);
+  match.fail(s.Array(s.Integer(), s.GreaterThan(1)), [ 1 ]);
+  match.pass(s.Array(s.Integer(), s.GreaterThan(1)), [ 1, 2 ]);
+
+  console.log(s.formatTrace(s.Array(s.Or(s.RegExp(/^[0-9]+$/),
+                                         s.Integer()).label('a integer or a string like integer'),
+                                    s.GreaterThan(0))
+                            .test([ 1, '42' ])
+                            .trace));
+});
+
+test('object', function () {
+  match.pass(s.Object(), { });
+
+  match.fail(s.Record({ a: s.Pass() }), { });
+  match.pass(s.Record({ a: s.Pass() }), { a: false }).logTrace();
 });

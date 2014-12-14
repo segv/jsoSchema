@@ -1,0 +1,26 @@
+{
+  "name": "jsoSchema",
+  "version": "2.0.0",
+  "description": "A JSON validation engine and schema language",
+  "homepage": "http://github.com/segv/jsoSchema",
+  "bugs": "https://github.com/segv/jsoSchema/issues",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Marco Baringer",
+    "email": "mb@bese.it"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/segv/jsoSchema"
+  },
+  "scripts": {
+    "test": "mocha -u qunit -R tap"
+  },
+  "devDependencies": {
+    "chai": "^1.10.0",
+    "grunt": "^0.4.5",
+    "grunt-closure-tools": "^0.9.7",
+    "grunt-mocha-test": "^0.12.4",
+    "mocha": "^2.0.1"
+  }
+}
