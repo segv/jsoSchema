@@ -3,7 +3,7 @@
 
 var assert = require('chai').assert;
 
-var s = require('../build/jsoSchema.min');
+var s = require('../src/jsoSchema');
 
 var l = function (prefix, value) {
   console.log(prefix, require('util').inspect(value, true, 1000));
@@ -188,17 +188,25 @@ test('array', function () {
   match.pass(s.Array(s.Integer(), s.Constant(1)), [ 1 ]);
   match.fail(s.Array(s.Integer(), s.GreaterThan(1)), [ 1 ]);
   match.pass(s.Array(s.Integer(), s.GreaterThan(1)), [ 1, 2 ]);
-
-  console.log(s.formatTrace(s.Array(s.Or(s.RegExp(/^[0-9]+$/),
-                                         s.Integer()).label('a integer or a string like integer'),
-                                    s.GreaterThan(0))
-                            .test([ 1, '42' ])
-                            .trace));
 });
 
 test('object', function () {
   match.pass(s.Object(), { });
 
   match.fail(s.Record({ a: s.Pass() }), { });
-  match.pass(s.Record({ a: s.Pass() }), { a: false }).logTrace();
+  match.pass(s.Record({ a: s.Pass() }), { a: false });
+  match.fail(s.Record({ a: s.Pass() }), { });
+});
+
+test('misc', function () {
+  var schema = s.Array(s.Or(s.RegExp(/^[0-9]+$/),
+                            s.Integer()).label('a integer or a string like integer'),
+                       s.GreaterThan(0));
+
+  //l(schema.constructor);
+
+  var match = schema.test([ 1, '42' ]);
+
+  //console.log(s.formatTrace(match.trace));
+
 });

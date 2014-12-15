@@ -105,6 +105,11 @@ module.exports = (function () {
     }
   };
 
+  function Match (match, trace) {
+    this.match = match;
+    this.trace = trace;
+  }
+
   /** Tests if value is valid according to the constraints in this.
    *
    * returns an object with a match property which will be true if the
@@ -114,8 +119,8 @@ module.exports = (function () {
    */
   Schema.prototype.test = function (value) {
     return this.exec(value,
-                     function (trace) { return { match: true, trace: trace }; },
-                     function (trace) { return { match: false, trace: trace }; },
+                     function (trace) { return new Match(true, trace); },
+                     function (trace) { return new Match(false, trace); },
                      [ ] );
   };
 
@@ -297,11 +302,11 @@ module.exports = (function () {
   s.Object = function (spec) {
     var self = this;
 
-    spec = merge({ required_properties: { },
-                   optional_properties: { },
-                   allow_other_properties: true,
-                   own_properties: true },
-                 spec);
+    spec = assign({ required_properties: { },
+                    optional_properties: { },
+                    allow_other_properties: true,
+                    own_properties: true },
+                  spec);
 
     self.required_properties    = spec.required_properties;
     self.optional_properties    = spec.optional_properties;
@@ -375,6 +380,10 @@ module.exports = (function () {
     });
     c.label('the constant value ' + JSON.stringify(constant));
     return c;
+  };
+
+  s.Enum = function (values) {
+    return s.Every(map(arguments, function (value) { return s.Constant(value); }));
   };
 
   s.OfType = function (typeName) {
