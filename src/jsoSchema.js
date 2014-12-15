@@ -29,7 +29,8 @@ module.exports = (function () {
     }
   };
 
-  function merge () {
+  /** Shim for Object.assign */
+  function assign (objects) {
     var o = arguments[0];
     for (var i = 1; i < arguments.length; i++) {
       for (var k in arguments[i]) {
@@ -39,12 +40,14 @@ module.exports = (function () {
     return o;
   };
 
+  /** returns the object's keys as an array */
   function keys (o) {
     var k = [ ];
     forIn(o, function (value, key) { k.push(key); });
     return k;
   };
 
+  /** creates a new object with the same (as per ===) keys and values as o */
   function shallow_clone (o) {
     var o2 = { };
     forIn(o, function (value, key) { o2[key] = value; });
@@ -77,9 +80,6 @@ module.exports = (function () {
     });
   }
 
-  /**
-   * @constructor
-   */
   function Schema () {
     this._doc = null;
     this._label = null;
@@ -110,7 +110,8 @@ module.exports = (function () {
    * returns an object with a match property which will be true if the
    * value meets the constraints and false otherwise. if value
    * satisfies the constraints of this. Otherwise returns an object
-   * describing the failure. */
+   * describing the failure.
+   */
   Schema.prototype.test = function (value) {
     return this.exec(value,
                      function (trace) { return { match: true, trace: trace }; },
@@ -118,10 +119,6 @@ module.exports = (function () {
                      [ ] );
   };
 
-  /**
-   * @param {Array<*>} trace
-   * @param {number=} depth
-   */
   function traceToLines(trace, depth) {
     depth = depth || 0;
     var steps = [ ];
@@ -145,10 +142,6 @@ module.exports = (function () {
     return text;
   };
 
-  /**
-   * @constructor
-   * @extends {Schema}
-   */
   function Condition (condition) {
     Schema.apply(this, arguments);
     this.condition = condition;
@@ -166,10 +159,6 @@ module.exports = (function () {
     }
   };
 
-  /**
-   * @constructor
-   * @extends {Schema}
-   */
   function Every (conditions) {
     Schema.apply(this, arguments);
     this.conditions = conditions;
@@ -177,14 +166,8 @@ module.exports = (function () {
   };
   extend(Schema, Every);
 
-  /**
-   * @param {Array<Schema>} conditions
-   */
   s.Every = function (conditions) { return new Every(conditions); };
 
-  /**
-   * @param {...Schema} schemas
-   */
   s.And = function (schemas) { return new Every(copyArray(arguments)); };
 
   Every.prototype.exec = function (value, p, f, outer_trace) {
@@ -213,10 +196,6 @@ module.exports = (function () {
     return loop(0, [ ]);
   };
 
-  /**
-   * @constructor
-   * @extends {Schema}
-   */
   function Any (conditions) {
     Schema.apply(this, arguments);
     this.conditions = conditions;
@@ -224,14 +203,8 @@ module.exports = (function () {
   };
   extend(Schema, Any);
 
-  /**
-   * @param {Array<Schema>} conditions
-   */
   s.Any = function (conditions) { return new Any(conditions); };
 
-  /**
-   * @param {...Schema} schemas
-   */
   s.Or  = function (schemas) { return new Any(copyArray(arguments)); };
 
   Any.prototype.exec = function (value, p, f, outer_trace) {
@@ -260,10 +233,6 @@ module.exports = (function () {
     return loop(0, [ ]);
   };
 
-  /**
-   * @constructor
-   * @extends {Schema}
-   */
   // call this ArraySchema so we do't conflict with the global Array object
   function ArraySchema (item_schema, length_schema) {
     Schema.apply(this, arguments);
@@ -392,7 +361,6 @@ module.exports = (function () {
                       optional_properties: arguments.length == 2 ? optional : { },
                       allow_other_properties: false,
                       own_properties: true }).label('a record object');
-
   };
 
   s.If = function (condition, then, els) {
