@@ -97,12 +97,14 @@ var match = { };
 
 match.fail = function (schema, value, message) {
   var test = _test(schema, value);
+  if (test.match != false) { test.logTrace(); }
   assert.notOk(test.match, _msg(schema, value, message));
   return test;
 };
 
 match.pass = function (schema, value, message) {
   var test = _test(schema, value);
+  if (test.match != true) { test.logTrace(); }
   assert.ok(test.match, _msg(schema, value, message));
   return test;
 };
@@ -193,9 +195,38 @@ test('array', function () {
 test('object', function () {
   match.pass(s.Object(), { });
 
+  match.pass(s.Object({ required_properties: { _id: s.String() } }),  { _id: '123' });
+  match.fail(s.Object({ required_properties: { _id: s.Integer() } }), { _id: '123' });
+
   match.fail(s.Record({ a: s.Pass() }), { });
   match.pass(s.Record({ a: s.Pass() }), { a: false });
   match.fail(s.Record({ a: s.Pass() }), { });
+
+  match.pass(s.Object({ required_properties: { _id: s.Or(s.String(), s.Integer()) } }),  { _id: '123' });
+  match.pass(s.Object({ required_properties: { _id: s.Or(s.String(), s.Integer()) } }),  { _id: 123 });
+  match.fail(s.Object({ required_properties: { _id: s.Or(s.String(), s.Integer()) } }),  { _id: false });
+
+  match.pass(s.Object({ optional_properties: { _id: s.Constant(true) } }),  { _id: true });
+  match.pass(s.Object({ optional_properties: { _id: s.Constant(true) } }),  {  });
+  match.fail(s.Object({ optional_properties: { _id: s.Constant(true) } }),  { _id: false });
+
+  match.pass(s.Object({ required_properties: { _id: s.Or(s.String(), s.Integer()) } }),  { _id: '123', other: 'other' });
+
+  match.fail(s.Object({ required_properties: { _id: s.Or(s.String(), s.Integer()) },
+                        allow_other_properties: false }),
+             { _id: '123',
+               other: 'other' });
+
+  match.pass(s.Object({ required_properties: { _id: s.DontCare() },
+                        without_properties: [ '_del' ] }),
+             { _id: '123' });
+
+  match.fail(s.Object({ without_properties: [ '_del' ] }), { _del: undefined });
+  match.pass(s.Object({ without_properties: [ '_del' ] }), {  });
+
+  match.pass(s.Object({  }), {  });
+  match.pass(s.Object({  }), { foo: 'bar' });
+
 });
 
 test('misc', function () {

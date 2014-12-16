@@ -304,12 +304,14 @@ module.exports = (function () {
 
     spec = assign({ required_properties: { },
                     optional_properties: { },
+                    without_properties: [ ],
                     allow_other_properties: true,
                     own_properties: true },
                   spec);
 
     self.required_properties    = spec.required_properties;
     self.optional_properties    = spec.optional_properties;
+    self.without_properties     = spec.without_properties;
     self.allow_other_properties = spec.allow_other_properties;
     self.own_properties         = spec.own_properties;
 
@@ -322,13 +324,19 @@ module.exports = (function () {
     };
 
     var defined_properties = { };
+
     var conditions = [ s.OfType('object') ];
 
     forIn(this.required_properties, function (schema, property) {
       defined_properties[property] = schema;
-      conditions.push(s.And(s.Condition(function (object) { return property_exists(object, property); }).label('property ' + property + ' exists'),
-                            schema)
-                      .label('required property ' + property));
+      conditions.push(s.Condition(function (object) { return property_exists(object, property); }).label('property ' + property + ' exists'));
+
+      var required = s.Schema().label('required property ' + property);
+      required.exec = function (value, p, f, trace) {
+        return schema.exec(value[property], p, f, trace);
+      };
+
+      conditions.push(required);
     });
 
     forIn(this.optional_properties, function (schema, property) {
@@ -336,26 +344,34 @@ module.exports = (function () {
         throw new Error('Property ' + property + ' defined both as required and optional');
       }
       defined_properties[property] = schema;
-      conditions.push(s.If(s.Condition(function (object) { return object.hasOwnProperty(property); }).label('property ' + property + ' exists'),
-                           schema,
-                           s.Pass().label('optional property not present'))
-                      .label('optoinal property ' + property));
+
+      var optional = s.Schema().label('optional property ' + property);
+
+      optional.exec = function(value, p, f, trace) {
+        if (property_exists(value, property)) {
+          return schema.exec(value[property], p, f, trace.concat({ schema: optional, value: value, match: true }));
+        } else {
+          return p(trace.concat({ schema: optional, value: value, match: true }));
+        }
+      };
+
+      conditions.push(optional);
+    });
+
+    map(self.without_properties, function (property_name) {
+      conditions.push(s.Condition(function (object) {
+        return ! property_exists(object, property_name);
+      }).label('without property ' + property_name));
     });
 
     if (! self.allow_other_properties) {
       conditions.push(s.Condition(function (object) {
-        var allowed = shallow_clone(defined_properties);
-        for (var k in object) {
-          if (self.own_properties) {
-            if (object.hasOwnProperty(k)) {
-              delete allowed[k];
-            }
-          } else {
-            delete allowed[k];
-          }
+        var object_properties = shallow_clone(object);
+        for (var k in defined_properties) {
+          delete object_properties[k];
         }
-        return keys(allowed).length == 0;
-      }));
+        return keys(object_properties).length == 0;
+      }).label('no other properties'));
     }
 
     return s.Every(conditions).label('unlabeled object schema');
