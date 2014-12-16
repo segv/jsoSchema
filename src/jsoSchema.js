@@ -413,7 +413,7 @@ module.exports = (function () {
   };
 
   s.Number = function () {
-    return s.OfType('number');
+    return s.OfType('number').label('a number');
   };
 
   s.GreaterThan = function (minimum) {
@@ -468,6 +468,10 @@ module.exports = (function () {
     return s.And(s.String(),
                  s.Condition(function (value) { return regexp.test(value); }).label('regexp.test'))
       .label('regexp test ' + regexp);
+  };
+
+  s.Boolean = function () {
+    return s.OfType('boolean').label('a boolean');
   };
 
   return s;
