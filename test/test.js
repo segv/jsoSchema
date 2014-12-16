@@ -229,6 +229,18 @@ test('object', function () {
 
 });
 
+test('OfType', function () {
+  match.pass(s.Boolean(), true);
+  match.pass(s.Boolean(), false);
+  match.fail(s.Boolean(), undefined);
+
+  match.fail(s.Number(), undefined);
+  match.pass(s.Number(), NaN);
+  match.pass(s.Number(), 0);
+  match.pass(s.Number(), 1.17);
+});
+
+
 test('misc', function () {
   var schema = s.Array(s.Or(s.RegExp(/^[0-9]+$/),
                             s.Integer()).label('a integer or a string like integer'),
