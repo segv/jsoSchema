@@ -124,21 +124,8 @@
   function Match (match, trace) {
     this.match = match;
     this.trace = trace;
+    this._backtrace = null;
   }
-
-  /** Tests if value is valid according to the constraints in this.
-   *
-   * returns an object with a match property which will be true if the
-   * value meets the constraints and false otherwise. if value
-   * satisfies the constraints of this. Otherwise returns an object
-   * describing the failure.
-   */
-  Schema.prototype.test = function (value) {
-    return this.exec(value,
-                     function (trace) { return new Match(true, trace); },
-                     function (trace) { return new Match(false, trace); },
-                     [ ] );
-  };
 
   function traceToLines(trace, depth) {
     depth = depth || 0;
@@ -173,6 +160,27 @@
       text += '\n';
     });
     return text;
+  };
+
+  Match.prototype.backtrace = function () {
+    if (this._backtrace == null) {
+      this._backtrace = s.formatTrace(this.trace);
+    }
+    return this._backtrace;
+  };
+
+  /** Tests if value is valid according to the constraints in this.
+   *
+   * returns an object with a match property which will be true if the
+   * value meets the constraints and false otherwise. if value
+   * satisfies the constraints of this. Otherwise returns an object
+   * describing the failure.
+   */
+  Schema.prototype.test = function (value) {
+    return this.exec(value,
+                     function (trace) { return new Match(true, trace); },
+                     function (trace) { return new Match(false, trace); },
+                     [ ] );
   };
 
   function Condition (condition) {
