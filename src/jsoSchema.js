@@ -106,23 +106,20 @@
 
   s.Schema = function () { return new Schema(); };
 
-  Schema.prototype.label = function (new_label) {
-    if (arguments.length == 0) {
-      return this._label;
-    } else {
-      this._label = arguments[0];
-      return this;
-    }
-  };
+  function accessor (property_name) {
+    return function (new_value) {
+      if (arguments.length == 0) {
+        return this[property_name];
+      } else {
+        this[property_name] = arguments[0];
+        return this;
+      }
+    };
+  }
 
-  Schema.prototype.doc = function (new_label) {
-    if (arguments.length == 0) {
-      return this._doc;
-    } else {
-      this._doc = arguments[0];
-      return this;
-    }
-  };
+  Schema.prototype.label = accessor('_label');
+  Schema.prototype.doc = accessor('_doc');
+  Schema.prototype.tag = accessor('_tag');
 
   function Match (match, trace) {
     this.match = match;
@@ -147,7 +144,10 @@
     depth = depth || 0;
     var steps = [ ];
     map(trace, function (step) {
-      steps.push([ depth, step.match, step.schema, step.value ]);
+      steps.push({ depth: depth,
+                   match: step.match,
+                   schema: step.schema,
+                   value: step.value });
       if (step.inner_trace) {
         steps = steps.concat(traceToLines(step.inner_trace, depth + 2));
       }
@@ -156,12 +156,21 @@
   };
 
   s.formatTrace = function(trace) {
-    var text = '';
-    map(traceToLines(trace), function (line) {
-      text += Array(line[0] + 1).join(' ');
-      text += (line[1] ? 'pass' : 'FAIL') + '/';
-      text += line[2].label() + '/';
-      text += JSON.stringify(line[3]) + '/\n';
+    var lines = traceToLines(trace);
+    var last_value = lines[0].value;
+    var text = 'value:' + JSON.stringify(last_value) + '\n';
+    map(traceToLines(trace), function (frame) {
+      text += Array(frame.depth + 1).join(' ');
+      if (frame.value !== last_value) {
+        last_value = frame.value;
+        text += 'v:' + JSON.stringify(last_value);
+        text += '\n';
+      }
+      text += (frame.match ? '' : 'FAIL');
+      var tag = frame.schema.tag();
+      var label = frame.schema.label();
+      text += '/s.' + tag + '/' + (label !== null ? label : '');
+      text += '\n';
     });
     return text;
   };
@@ -169,7 +178,7 @@
   function Condition (condition) {
     Schema.apply(this, arguments);
     this.condition = condition;
-    this.label('unlabeled condition schema');
+    this.tag('Condition');
   };
   extend(Schema, Condition);
 
@@ -186,13 +195,12 @@
   function Every (conditions) {
     Schema.apply(this, arguments);
     this.conditions = conditions;
-    this.label('unlabeled every schema');
   };
   extend(Schema, Every);
 
-  s.Every = function (conditions) { return new Every(conditions); };
+  s.Every = function (conditions) { return new Every(conditions).tag('Every'); };
 
-  s.And = function (schemas) { return new Every(copyArray(arguments)); };
+  s.And = function (schemas) { return new Every(copyArray(arguments)).tag('And'); };
 
   Every.prototype.exec = function (value, p, f, outer_trace) {
     var self = this;
@@ -227,9 +235,9 @@
   };
   extend(Schema, Any);
 
-  s.Any = function (conditions) { return new Any(conditions); };
+  s.Any = function (conditions) { return new Any(conditions).tag('Any'); };
 
-  s.Or  = function (schemas) { return new Any(copyArray(arguments)); };
+  s.Or  = function (schemas) { return new Any(copyArray(arguments)).tag('Or'); };
 
   Any.prototype.exec = function (value, p, f, outer_trace) {
     var self = this;
@@ -315,7 +323,7 @@
   };
 
   s.Array = function (item_schema, length_schema) {
-    return new ArraySchema(item_schema, length_schema);
+    return new ArraySchema(item_schema, length_schema).tag('Array');
   };
 
   s.Object = function (spec) {
@@ -393,20 +401,22 @@
       }).label('no other properties'));
     }
 
-    return s.Every(conditions).label('unlabeled object schema');
+    return s.Every(conditions).tag('Object');
   };
 
   s.Record = function(required, optional) {
     return s.Object({ required_properties: required,
                       optional_properties: arguments.length == 2 ? optional : { },
                       allow_other_properties: false,
-                      own_properties: true }).label('a record object');
+                      own_properties: true }).label('a record object')
+      .tag('Record');
   };
 
   s.If = function (condition, then, els) {
     return s.Or(s.And(condition,
-                      then).label('If: condition -> then'),
-                els).label('If: not condition -> else');
+                      then),
+                els)
+      .tag('If');
   };
 
   s.Constant = function (constant) {
@@ -414,6 +424,7 @@
       return value === constant;
     });
     c.label('the constant value ' + JSON.stringify(constant));
+    c.tag('Constant');
     return c;
   };
 
@@ -428,11 +439,11 @@
       } else {
         return typeof(value) == typeName;
       }
-    }).label('a value of type ' + typeName);
+    }).label('a value of type ' + typeName).tag('OfType');
   };
 
   s.Number = function () {
-    return s.OfType('number').label('a number');
+    return s.OfType('number').tag('Number');
   };
 
   s.GreaterThan = function (minimum) {
@@ -447,11 +458,11 @@
 
   s.Integer = function () {
     return s.And(s.OfType('number'),
-                 s.Condition(function (value) { return value % 1 == 0; }).label('mod 1 check')).label('an integer');
+                 s.Condition(function (value) { return value % 1 == 0; }).label('mod 1 check')).tag('Integer');
   };
 
   s.String = function () {
-    return s.OfType('string');
+    return s.OfType('string').tag('String');
   };
 
   s.Nullable = function (schema) {
@@ -468,29 +479,29 @@
         return this._label;
       }
     };
-    return nullable;
+    return nullable.tag('Nullable');
   };
 
   s.Pass = function () {
-    return s.Condition(function () { return true; }).label('always pass');
+    return s.Condition(function () { return true; }).tag('Pass');
   };
 
   s.Fail = function () {
-    return s.Condition(function () { return false; }).label('always fail');
+    return s.Condition(function () { return false; }).tag('Fail');
   };
 
   s.DontCare = function () {
-    return s.Condition(function () { return true; }).label('any value');
+    return s.Condition(function () { return true; }).tag('DontCare');
   };
 
   s.RegExp = function (regexp) {
     return s.And(s.String(),
-                 s.Condition(function (value) { return regexp.test(value); }).label('regexp.test'))
+                 s.Condition(function (value) { return regexp.test(value); }).tag('RegExp'))
       .label('regexp test ' + regexp);
   };
 
   s.Boolean = function () {
-    return s.OfType('boolean').label('a boolean');
+    return s.OfType('boolean').tag('Boolean');
   };
 
   return exporter(s);
