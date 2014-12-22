@@ -20,16 +20,29 @@
 
   var s = { };
 
-  function forIn (o, callback) {
-    var value;
-    for (value in o) {
-      if (o.hasOwnProperty(value)) {
-        callback(o[value], value);
+  /**
+   * Calls callback on each property, as per hasOwnProperty, of
+   * object.
+   * @param {object} object an object
+   * @param {function(object,object)} callback a function. will be passed (property_name,
+   * property_value) */
+  function forIn (object, callback) {
+    var property;
+    for (property in object) {
+      if (object.hasOwnProperty(property)) {
+        callback(object[property], property);
       }
     }
   };
 
-  /** Shim for Object.assign */
+  /**
+   * Shim for Object.assign.
+   * @param {...objects} objects this list of objects to be
+   * merged. The first object will be destructively
+   * modified. Properties will be applid from left to right (so the
+   * rightmost value is the value that will be visible when assign
+   * returns.
+   * @return {object} the first argument */
   function assign (objects) {
     var o = arguments[0];
     for (var i = 1; i < arguments.length; i++) {
@@ -40,20 +53,26 @@
     return o;
   };
 
-  /** returns the object's keys as an array */
+  /**
+   * returns the object's keys as an array */
   function keys (o) {
     var k = [ ];
     forIn(o, function (value, key) { k.push(key); });
     return k;
   };
 
-  /** creates a new object with the same (as per ===) keys and values as o */
+  /**
+   * creates a new object with the same (as per ===) keys and values
+   * as o */
   function shallow_clone (o) {
     var o2 = { };
     forIn(o, function (value, key) { o2[key] = value; });
     return o2;
   };
 
+  /**
+   * returns a fresh array containg the result of calling callback on
+   * each element of array */
   function map (array, callback) {
     var a = [ ], i;
     for (i = 0; i < array.length; i++) {
