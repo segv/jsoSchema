@@ -13,9 +13,9 @@
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-/*global module */
+/*global module, define */
 
-module.exports = (function () {
+(function (exporter) {
   'use strict';
 
   var s = { };
@@ -474,6 +474,14 @@ module.exports = (function () {
     return s.OfType('boolean').label('a boolean');
   };
 
-  return s;
+  return exporter(s);
 
-})();
+})(function (object) {
+  if (typeof(module) !== 'undefined') {
+    return module.exports = object;
+  } else if (typeof(define) !== 'undefined') {
+    return define(object);
+  } else {
+    return this.jsoSchema = object;
+  }
+});
