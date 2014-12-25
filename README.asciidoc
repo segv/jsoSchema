@@ -1,10 +1,46 @@
 = jsoSchema
 Marco Baringer <mb@bese.it>
+v2, Winter 2014
 
-jsoSchema is a schema language and validator for javascript objects.
+jsoSchema is an engine, and a kind of schema language, for validating
+javascript objects (often, but not always, json data sent between a
+browser and a web server).
 
-Note that jsoSchema is not a JSON text parser/validator; it can
-however, and generally is, used with the output of `JSON.parse`.
+Note that jsoSchema is not a JSON text parser/validator. It operates
+on in-memory objects only, and its schema is not just data (objects
+with a static, and serializable, stata ala JSON Schema and XSD) actual
+code (functions). While a jsoSchema can be used to generate a json
+schema (or any other kind of schema), since it's "just" javascript
+objects and methods, it can not be parsed and minpulated by something
+other than jsoSchema.
+
+== Synopsis ==
+
+----
+// load the module
+var s = require('jsoSchema');
+
+// create a schema which matches either a positive integer or a string
+var schema = s.Or(s.GreaterThan(0),
+                  s.String());
+
+// assuming foo holds our value, test it agains the schema
+var test = schema.test(foo)
+
+// the returned object has, among other things, a boolean property
+// called match. this property is, surprisingly enough, true if the
+// object matched the schema and false otherwise.
+if (test.match) {
+   console.log('foo is a positive integer or a string');
+} else {
+   console.log('foo is a positive integer nor a string');
+   console.log('failed because:', test.backtrace());
+}
+----
+
+== Reference ==
+
+See link:doc/API.asciidoc[API].
 
 == Installation ==
 
@@ -13,158 +49,17 @@ many; and I have no desire to try and keep up with them
 all. Considering that, the code itself is exactly one file of
 javascript:
 
-https://raw.github.com/segv/jsoSchema/master/src/jsoSchema.js
+link:src/jsoSchema.js?raw=true[jsoSchema.js]
 
-which exposes a single global variable, jsoSchema, with all the
-neccessary functions and variables as properties on that object. Feel
-free, and it is in infact what i'd suggest, to just copy that file
-into your own code base.
+It should work in nodejs/npm (that's the environment the code is
+developed and tested in) directly and, i would assume but haven't
+tested, in the browser as well.
 
-That said, you can get versions of jsoSchema designed to work with
-jquery,
-https://raw.github.com/segv/jsoSchema/0.9.4/build/raw/jquery.jsoSchema.js[jquery.jsoSchema.js]
-(https://raw.github.com/segv/jsoSchema/0.9.4/build/min/jquery.jsoSchema.js[minified]),
-or requirejs (which means dojo),
-https://raw.github.com/segv/jsoSchema/0.9.4/build/raw/jso/Schema.js[jso/Schema.js]
-(https://raw.github.com/segv/jsoSchema/0.9.4/build/min/jso/Schema.js[minified]).
-
-If you're using the
-https://developers.google.com/closure/compiler/[Closure Compiler] you
-can just use the source file as is, maybe adding
-`goog.provide('jsoSchema')`, the code has the required type
-definitions and structure to compile cleanly with
-+ADVANCED_OPTIMIZATIONS+, though you might want to remove some of the
-string property names which exist only to make sure the public api of
-the minified jquery/requestjs files is what is documented here (if
-you're using the closure compiler this should all make sense, if not
-just don't worry about it).
-
-== Usage ==
-
-It should be pretty simple, create a schema, give it a value, see if
-you get +true+ or +false+ back.
-
-Here's a short example, but see
-https://raw.github.com/segv/jsoSchema/master/test/examples.js[test/examples.js]
-for more examples:
-
-[source,javascript]
-----
-require([ 'jso/Schema' ], function (s) {
-  var schema = s.Record({ name: s.String(), 
-                          age: s.Integer() });
-
-  schema.validate({ name: "Me", age: 25 }); // returns true
-  schema.validate({ name: "Me" }); // returns false
-
-  schema = s.Array(s.Number());
-
-  schema.validate([1]); // returns true
-  schema.validate(["1"]); // returns false
-
-  schema = s.Record({ name: s.String(), 
-                      age: s.Or(s.Integer(), 
-                                s.Constant("none-given")) });
-
-  schema.validate({ name: "Milhouse" }); // returns false
-  schema.validate({ name: "Milhouse", age: 63 }); // returns true
-  schema.validate({ name: "Milhouse", age: "none-given" }); // returns true
-  schema.validate({ name: "Milhouse", age: false }); // returns false
-  schema.validate({ name: "Milhouse", age: -4 }); // returns true
-
-  var age_constraint = s.Condition(function (value) {
-    return 23 <= value.age && value.age <= 32;
-  };
-
-  schema = s.Record({ age: s.Or(age_constraint, 
-                                s.Constant("none-given")) });
-
-  schema.validate({ age: 20 }); // returns false
-  schema.validate({ age: "none-given" }); // returns true
-  schema.validate({ age: 25 }); // returns true
-  schema.validate({ age: 35 }); // returns false
-
-
-});
-----
-
-== Schema Generators ==
-
-Read the code if you want all the details (the code, and not this
-README, is what you're actually using, so you you should read that
-anyway), but here's a, probably inaccurate and incomplete, summary.
-
-=== Values ===
-
-Number(), String(), Boolean()::
-  Checks that the given value's +typeof+ is +"number"+, +"string"+ or +"boolean"+ respectively
-OfType(typeName)::
-  Checks that the given values's +typeof+ is +==+ to +typeName+
-Constant(value)::
-  Checks that the given value is +===+ to +value+.
-Enum(...values)::
-  Checks that the given value is one of elements of +values+ (as per +===+). This is simply a convenience around OneOf.
-OneOf(values)::
-  Checks that the given value is one of elements of +values+ (as per +===+). 
-Condition(function)::
-  Checks that +function+, when applied to the given value, returns a truthy value.
-
-=== Objects ===
-
-Record(properties), Record(properties, optional_properties):: Checks
-  that the given value is an object, with the same set of properties
-  as +properties+ (no more, no less), and that each of the given
-  value's property value checks against the schema in +properties+. If
-  the +optional_properties+ argument is present it is passed to the
-  underlying +Object+ schema.
-  +
-  Equivalent to:
-
-  Object({ required_properties: properties, 
-           optional_properties: optional_properties, 
-           allow_other_properties: false })
-
-HashTable():: Simply checks that the given value is an object.
-
-Object(description):: description is an object with three properties:
-  required_properties;; a hash table (another object) mapping property
-    names to schemas. if the given property is found the corresponding
-    schema will be used, if the property is not found or the schema
-    fails, the Object schema fails.
-  optional_properties;; similar to `required_properties`, a hash table
-    mapping property names to schemas, but if the property isn't found
-    we don't immediately fail (if the property is found, then the
-    schema does have to match the property's value).  
-  allow_other_properties;; a boolean specifying if properties not
-    explicitly mentioned in `required_properties` or
-    `optional_properties` are allowed. defaults to true.
-
-=== Arrays ===
-
-Array(item), Array(item, length):: Checks that the given value is an
-  array, that the value's length checks against +length+ (optional,
-  defaults to just +Pass()+) and that each time checks against +item+.
-  
-Tuple(...items):: An array of length items where each element passes
-  the corresponding item schema.
-
-=== Schema Generators ===
-
-Or(a,b):: Creates a schema which passes if either the schema +a+ or
-  the schema +b+ pass. Like the normal +||+ operator, schema +b+ will
-  be tested only if +a+ fails.
-
-Any(conditions)::
-  N-argument version of Or. +conditions+ is simply an array of
-  schemas, we stop checking as soon as one of the passes, if none of
-  them do we fail.
-
-And(a,b)::
-  If the schemas +a+ and +b+ pass, the +And+ schema passes. If +a+
-  fails +b+ will not be tested.
-
-Every(conditions)::
-  N-argument version of +And+.
+If it doesn't, or if you're just curious: At the bottom of that file
+is a single function, bound to the exporter variable in the jsoSchema
+code itself, which takes as input the jsoSchema object and does
+whatever is needed to export the object. Please feel free to edit that
+bit of code to suite your needs.
 
 == Compared to JSON schema ==
 
@@ -187,262 +82,3 @@ This code vs data approach has two important consequences:
 2. A jsoSchema can perfrom any computation that's needed; a JSON
    Schema is limited to the constraints defined in the JSON Schema
    specification.
-
-== Defining new schemas ==
-
-If your schema can be expressed as a singe condition on a single
-value, just use the Condition schema and be done with it. Otherwise,
-read on.
-
-A jso schema is a function which takes three arguments (its return
-value is unspecified, and no piece of the jsoSchema depends on the
-schema's return value):
-
-[source,javascript]
-----
-var schema = function (value, pass, fail) { ... }
-----
-
-+value+ is, surprisingly enough, the javascript object we want to test
-the schema on. +pass+ is a function, which itself takes no arguments,
-and should be called if +value+ matches (or passes or satisifies or
-whatever) the schema. +fail+ is a function which should be called if
-+value+ does not pass the schema.
-
-so, as an example, a schema to check if a value is even would look
-like this:
-
-[source,javascript]
-----
-var isEven = function (value, pass, fail) {
-  if (value % 2 == 0) {
-    pass();
-  } else 
-    fail(value, " is not divisible by 2");
-  }
-}
-----
-
-It's important here to notice two things:
-
-1. we tell the rest of the validator that we've matched (or not) by
-   calling the function pass (or fail).
-
-2. our schema does not do anything after having called pass or fail.
-
-3. (this is something you should know but it's not obvious from the
-   above code) a schema function may be called multiple times on the
-   same value.
-
-The reason for these constraints are slightly beyond the scope of this
-README (google "Continuation Passing Style" if you're really curious),
-but it is important to keep them present when writing new schema
-generator functions.
-
-As a slightly more complicated example, let's try and implement a
-schema function which checks if its value is an array of unique
-items. we'll start, just because this is a README, with the code which
-does exactly what we'd like to check:
-
-[source,javascript]
-----
-var uniqueElements = function (array) {
-  var i, set = { };
-  for (i = 0; i < array.length; i++) {
-    if (set[array[i]]) {
-      return false;
-    }
-    set[array[i]] = true;
-  }
-  return true;
-}
-----
-
-This is a, very simple, function which returns true if all the
-elements of an array a unique (as per +===+) and false otherwise. NB:
-We've implicitly decided that a zero length array is unique.
-
-As a first attempt, we'll just change this function and add in the
-parameters +pass+ and +fail+, and call +pass+ when we have returned
-true and call +fail+ when we would have returned +false+:
-
-[source,javascript]
-----
-var uniqueElements = function (array, pass, fail) {
-  var i, set = { };
-  for (i = 0; i < array.length; i++) {
-    if (set[array[i]]) {
-      fail(); // was return false
-    }
-    set[array[i]] = true;
-  }
-  pass(); // was return true
-}
-----
-
-The problem with this implementation is that it will call fail once
-for every duplicate element, and then, no matter what, it'll call pass
-at the end. that obviously doesn't make any sense (and, if our
-pass/fail function do logging or have side effects we'll be
-introducing bugs), so let's change it to:
-
-the thing to realize is that a takes, as an input parameter, a
-function that it will call if the value checks. that's where we can
-put our logic for calling b. so instead of this:
-
-[source,javascript]
-----
-var uniqueElements = function (array, pass, fail) {
-  var i, set = { };
-  for (i = 0; i < array.length; i++) {
-    if (set[array[i]]) {
-      return fail(); // was return false
-    }
-    set[array[i]] = true;
-  }
-  return pass(); // was return true
-}
-----
-
-by using the return statement we're stopping the execution of this
-function as soon as we find a single duplicate, and that's exactly
-what we want. we don't know what value fail or pass, and therefore
-function, actually return, but, by definition of the schema api, it
-doesn't matter.
-
-Let's take another, slightly more complicated (at least conceptually)
-example: negation. we want a schema function which takes as input a
-schema (so this is actually a schema combiner or generator) and
-returns a schema that return the opposite of the input schema,
-procedurally, we want this:
-
-[source,javascript]
-----
-var negate = function (schema) {
-  return function (value, pass, fail) {
-    if ( ! schema(value) ) { 
-      pass()
-    } else {
-      fail()
-    }
-  }
-}
-----
-
-this code, as written, has a few problems:
-
-1. schema, by definition of the schema api, doesn't return a value, so
-   we can't test its return value for true/false ness.
-
-2. schema, also by definition, takes three arguments, a value, a pass
-   function and a fail function, but here we're only passing in the
-   value. what could we pass to schema as its pass or fail function?
-   how can we pass in the then branch of the if we're in? does that
-   even make any sense? obviously there's a problem here.
-
-We need to look at this problem differently (and, if you understand
-continuations or continuation passing style, this should be
-obvious). The thing to notice is that we're already given a schema,
-and we don't have any extra checks of our own, we just want to do
-something differently depending on whether or not schema matches;
-well, it turns out that we can just use schema's pass and fail
-arguments to do exactly that:
-
-[source,javascript]
-----
-var negate = function (schema) {
-  return function (value, pass, fail) {
-    schema(value,
-           function () { fail(); },
-           function () { pass(); });
-}
-----
-
-so now +schema+ will do whatever it normally does, and if that passes
-it'll call our fail function, if +schema+ fails it'll call our +pass+
-function. perfect. finally, we could simplify the code a little bit:
-
-[source,javascript]
-----
-var negate = function (schema) {
-  return function (value, pass, fail) {
-    schema(value, fail, pass);
-}
-----
-
-now, one last example, xor (given a list of schema, match exactly
-one). as with negate we'll start with the simple (but wrong) version:
-
-[source,javascript]
-----
-var xor = function (schemas) {
-  return function (value, pass, fail) {
-    var i, num_matches = 0;
-    for (i = 0; i < schema.length; i++) {
-      if (schemas[i](value)) {
-        num_matches++;
-      }
-    }
-    return num_matches == 1;
-  }
-}
-----
-
-this one is a bit more complicated, we need to test all the schemas on
-our value, we need to count how many match, and, finally, if exactly
-one of them matches then we pass, other wise we fail. we need to do
-this but the only control flow tool we have is the function(s) we pass
-to the schemas, and we can't pass a bit of a loop (we could if we had
-call_with_current_continuation, but we don't), but let's try it and
-see how it looks:
-
-[source,javascript]
-----
-var xor = function (schemas) {
-  return function (value, pass, fail) {
-    
-    var i, num_matches = 0;
-    for (i = 0; i < schema.length; i++) {
-      schemas[i](value, 
-                 function () { num_matches++; }, 
-                 function () { });
-    }
-    num_matches == 1 ? pass() : fail();
-  }
-}
-----
-
-seems reasonable enough, call each schema on the value, if the schema
-passes tell it to increment num_matches, otherwise do
-nothing. finally, if exactly one schema matched, call pass, otherwise
-call fail. this implementation actually works in a lot of cases, but
-there are certain cases, and while it's pretty uncommon when you do
-need it that's the only thing that will work, where we want to go back
-and try to fail (or pass) where we'd previously passed (or failed) so
-that a later schema can pass (or fail) and the whole thing can pass.
-
-for that reason we need to restructure that code so that whenever our
-xor functions call either pass, fail _or_ a schema, that's the last
-thing it does:
-
-[source,javascript]
-----
-var xor = function (schemas) {
-  return function (value, pass, fail) {
-    var loop = function (i, num_matches) {
-      if (i == schemas.length) {
-        num_matches == 1 ? pass() : fail();
-      } else {
-        schemas[i](value,
-                   function () { loop(i + 1, num_matches + 1); },
-                   function () { loop(i + 1, num_matches); });
-      }
-    };
-    loop(0, 0);
-  }
-}
-----
-
-This has gone way beyond what should go in a README, so we're just
-going to leave it there. Submit an issue on github if you have some
-suggestions as to how to explain this corner of jsoSchema, thanks.

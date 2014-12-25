@@ -1,0 +1,95 @@
+= jsoSchema API Reference
+Marco Baringer <mb@bese.it>
+v2, Winter 2014
+
+Read the code if you want all the details (the code, and not this
+README, is what you're actually using, so you you should read that
+anyway), but here's a, probably inaccurate and incomplete, summary
+(fwiw the code follows it naming/style convention stricly, the regexp
+"^ s\.[A-Z]" will find all the exported schema generators):
+
+== Values ==
+
+Number(), String(), Boolean()::
+  Checks that the given value's +typeof+ is +"number"+, +"string"+ or +"boolean"+ respectively
+OfType(typeName)::
+  Checks that the given values's +typeof+ is +===+ to +typeName+
+Constant(value)::
+  Checks that the given value is +===+ to +value+.
+Enum(...values)::
+  Checks that the given value is one of elements of +values+ (as per +===+). This is simply a convenience around OneOf.
+RegExp(regexp)::
+  Passes if the regexp matches.
+Condition(function)::
+  Checks that +function+, when applied to the given value, returns a truthy value.
+
+== Objects ==
+
+Record(required_properties), Record(required_properties, optional_properties):: Checks
+  that the given value is an object, with the same set of properties
+  as +properties+ (no more, no less), and that each of the given
+  value's property value checks against the schema in +properties+. If
+  the +optional_properties+ argument is present it is passed to the
+  underlying +Object+ schema.
+  +
+  Equivalent to:
+
+  Object({ required_properties: properties, 
+           optional_properties: optional_properties, 
+           allow_other_properties: false,
+           own_properties: true })
+
+Object(spec):: spec is an object with five properties:
++
+  required_properties;; a hash table (another object) mapping property
+    names to schemas. if the given property is found the corresponding
+    schema will be used, if the property is not found or the schema
+    fails, the Object schema fails.
+  optional_properties;; similar to `required_properties`, a hash table
+    mapping property names to schemas, but if the property isn't found
+    we don't immediately fail (if the property is found, then the
+    schema does have to match the property's value).  
+  allow_other_properties;; a boolean specifying if properties not
+    explicitly mentioned in `required_properties` or
+    `optional_properties` are allowed. defaults to true.
+  own_properties;; a boolean indictaing if the check should limit
+    itself to the object's own properties (as per hasOwnProperty) or
+    also consider inherited properties. default to true.
+  without_properties;; an array of property names which should not
+    exist in the object
+
+== Arrays ==
+
+Array(item), Array(item, length):: Checks that the given value is an
+  array, that the value's length checks against +length+ (optional,
+  defaults to just +Pass()+) and that each item checks against +item+.
+  
+Tuple(...items):: An array of length items where each element passes
+  the corresponding item schema.
+
+== Schema Generators ==
+
+Or(a,b):: Creates a schema which passes if either the schema +a+ or
+  the schema +b+ pass. Like the normal +||+ operator, schema +b+ will
+  be tested only if +a+ fails.
+
+Any(conditions)::
+  N-argument version of Or. +conditions+ is simply an array of
+  schemas, we stop checking as soon as one of the passes, if none of
+  them do we fail.
+
+And(a,b)::
+  If the schemas +a+ and +b+ pass, the +And+ schema passes. If +a+
+  fails +b+ will not be tested.
+
+Every(conditions)::
+  N-argument version of +And+.
+
+Nullable(schema)::
+  Matches either +schema+ or the value null.
+
+=== Meta Schemas ===
+
+Pass(), DontCare():: Always passes
+
+Fail():: Always fails.

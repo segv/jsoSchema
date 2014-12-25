@@ -525,8 +525,18 @@
                  s.Condition(function (value) { return value % 1 == 0; }).label('mod 1 check')).tag('Integer');
   };
 
+  s.Boolean = function () {
+    return s.OfType('boolean').tag('Boolean');
+  };
+
   s.String = function () {
     return s.OfType('string').tag('String');
+  };
+
+  s.RegExp = function (regexp) {
+    return s.And(s.String(),
+                 s.Condition(function (value) { return regexp.test(value); }).tag('RegExp'))
+      .label('regexp test ' + regexp);
   };
 
   s.Nullable = function (schema) {
@@ -556,16 +566,6 @@
 
   s.DontCare = function () {
     return s.Condition(function () { return true; }).tag('DontCare');
-  };
-
-  s.RegExp = function (regexp) {
-    return s.And(s.String(),
-                 s.Condition(function (value) { return regexp.test(value); }).tag('RegExp'))
-      .label('regexp test ' + regexp);
-  };
-
-  s.Boolean = function () {
-    return s.OfType('boolean').tag('Boolean');
   };
 
   return exporter(s);
