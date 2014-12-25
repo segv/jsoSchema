@@ -493,7 +493,7 @@
   };
 
   s.Enum = function (values) {
-    return s.Every(map(arguments, function (value) { return s.Constant(value); }));
+    return s.Any(map(arguments, function (value) { return s.Constant(value); })).tag('Enum');
   };
 
   s.OfType = function (typeName) {
