@@ -13,7 +13,7 @@
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-/*global module, define */
+/*global module, define, exports */
 
 (function (exporter) {
   'use strict';
@@ -570,12 +570,18 @@
 
   return exporter(s);
 
-})(function (object) {
-  if (typeof(module) !== 'undefined') {
-    return module.exports = object;
-  } else if (typeof(define) !== 'undefined') {
-    return define(object);
+})(function (jsoSchema) {
+  // See https://github.com/umdjs/umd/blob/master/returnExports.js
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(jsoSchema);
+  } else if (typeof exports === 'object') {
+    // Node. Does not work with strict CommonJS, but only
+    // CommonJS-like environments that support module.exports, like
+    // Node.
+    module.exports = jsoSchema;
   } else {
-    return this.jsoSchema = object;
+    // Browser globals, global this is window. (why don't we just write window then?)
+    eval('this').jsoSchema = jsoSchema;
   }
 });
