@@ -9,6 +9,7 @@
     "name": "Marco Baringer",
     "email": "mb@bese.it"
   },
+  "main": "src/jsoSchema.js",
   "repository": {
     "type": "git",
     "url": "http://github.com/segv/jsoSchema"
