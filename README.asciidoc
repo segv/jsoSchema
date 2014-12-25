@@ -44,6 +44,14 @@ See link:doc/API.asciidoc[API].
 
 == Installation ==
 
+=== with npm ===
+
+----
+npm install jsoschema
+----
+
+=== without npm ===
+
 How many ways are there to install, compile and deploy js code? too
 many; and I have no desire to try and keep up with them
 all. Considering that, the code itself is exactly one file of
