@@ -156,7 +156,7 @@
       text += (frame.match ? '' : 'FAIL');
       var tag = frame.schema.tag();
       var label = frame.schema.label();
-      text += '/s.' + tag + '/' + (label !== null ? label : '');
+      text += '/' + tag + (label !== null ? '/' + label : '');
       text += '\n';
     });
     return text;
