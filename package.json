@@ -1,7 +1,7 @@
 {
   "name": "jsoSchema",
-  "version": "2.0.0",
-  "description": "A JSON validation engine and schema language",
+  "version": "2.1.7",
+  "description": "A javascript object validation engine and schema language",
   "homepage": "http://github.com/segv/jsoSchema",
   "bugs": "https://github.com/segv/jsoSchema/issues",
   "license": "Apache-2.0",
