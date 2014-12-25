@@ -1,5 +1,5 @@
 {
-  "name": "jsoSchema",
+  "name": "jsoschema",
   "version": "2.1.7",
   "description": "A javascript object validation engine and schema language",
   "homepage": "http://github.com/segv/jsoSchema",
