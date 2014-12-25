@@ -240,6 +240,14 @@ test('OfType', function () {
   match.pass(s.Number(), 1.17);
 });
 
+test('tuple', function () {
+  match.pass(s.Tuple(s.Integer()), [ 1 ]);
+  match.fail(s.Tuple(s.Integer()), [ 'a' ]);
+  match.fail(s.Tuple(s.Integer()), [ 1, 2 ]);
+  match.pass(s.Tuple(s.Tuple(s.Integer()), s.GreaterThan(0)), [ [ 1 ], 2 ]);
+  match.pass(s.Tuple(s.Tuple(s.Integer()), s.GreaterThan(0)), [ [ 1 ], 1 ]);
+  match.fail(s.Tuple(s.Tuple(s.Integer()), s.GreaterThan(0)), [ [ 1 ], 0 ]);
+});
 
 test('misc', function () {
   var schema = s.Array(s.Or(s.RegExp(/^[0-9]+$/),

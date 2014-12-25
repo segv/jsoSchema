@@ -334,6 +334,62 @@
     return new ArraySchema(item_schema, length_schema).tag('Array');
   };
 
+  function Tuple (item_schemas) {
+    Schema.apply(this, arguments);
+    // 20141222:mb: not at all sure how much sense it makes to create
+    // a Tuple schema with no items. maybe we should error if
+    // arguments.length == 0?
+    this.item_schemas = item_schemas || [ ];
+    this.label = 'unlabeled tuple';
+    this.typeCheck = s.OfType('array');
+    this.lengthCheck = s.Condition(function (value) { return value.length == item_schemas.length; });
+  };
+  extend(Schema, Tuple);
+
+  Tuple.prototype.exec = function (value, p, f, outer_trace) {
+    var self = this;
+
+    var fail = function (inner_trace) {
+      return f(outer_trace.concat({ match: false,
+                                    schema: self,
+                                    value: value,
+                                    inner_trace: inner_trace }));
+    };
+
+    var loop = function (index, inner_trace) {
+      if (index == self.item_schemas.length) {
+        return p(outer_trace.concat({ match: true,
+                                      schema: self,
+                                      value: value,
+                                      inner_trace: inner_trace }));
+      } else {
+        return self.item_schemas[index].exec(value[index],
+                                             function(trace) {
+                                               return loop(index + 1, inner_trace.concat(trace));
+                                             },
+                                             function (trace) {
+                                               return fail(inner_trace.concat(trace));
+                                             },
+                                             [ ]);
+      }
+    };
+
+    return self.typeCheck.exec(value,
+                               function (type_trace) {
+                                 return self.lengthCheck.exec(value,
+                                                              function (trace) { return loop(0, type_trace.concat(trace)); },
+                                                              function (trace) { return fail(type_trace.concat(trace)); },
+                                                              [ ]);
+                               },
+                               function (type_trace) { return fail(type_trace); },
+                               [ ]);
+
+  };
+
+  s.Tuple = function () {
+    return new Tuple(copyArray(arguments)).tag('Tuple');
+  };
+
   s.Object = function (spec) {
     var self = this;
 
