@@ -9,27 +9,42 @@ var l = function (prefix, value) {
   console.log(prefix, require('util').inspect(value, true, 1000));
 };
 
+var _test = function (schema, value) {
+  var test = schema.test(value);
+  test.logTrace = function () {
+    console.log(s.formatTrace(test.trace));
+  };
+  return test;
+};
+
+var _msg = function (schema, value, message) {
+  return message || (JSON.stringify(schema) + ' on ' + JSON.stringify(value));
+};
+
+var match = { };
+
+match.fail = function (schema, value, message) {
+  var test = _test(schema, value);
+  assert.notOk(test.match, _msg(schema, value, message));
+  return test;
+};
+
+match.pass = function (schema, value, message) {
+  var test = _test(schema, value);
+  assert.ok(test.match, _msg(schema, value, message));
+  return test;
+};
+
 suite('simple schemas');
 
 test('simple condition schemas work', function () {
 
-  assert(s.Condition(function () { return true;  }).test(undefined).match == true,
-         'always pass condition failed');
-
-  assert(s.Condition(function () { return false; }).test(undefined).match == false,
-         'always fail condition passed');
-
-  assert(s.Condition(function (x) { return x == 0; }).test(0).match == true,
-         '0 did not match 0');
-
-  assert(s.Condition(function (x) { return x == 1; }).test(1).match == true,
-         '1 did not match 1');
-
-  assert(s.Condition(function (x) { return x < 0; }).test(1).match == false,
-         '1 was less than zero');
-
-  assert(s.Condition(function (x) { return x < 0; }).test(-1).match == true,
-         '-1 mas not less than 0');
+  match.pass(s.Condition(function () { return true;  }), undefined);
+  match.fail(s.Condition(function () { return false; }), undefined);
+  match.pass(s.Condition(function (x) { return x == 0; }), 0);
+  match.pass(s.Condition(function (x) { return x == 1; }), 1);
+  match.fail(s.Condition(function (x) { return x < 0; }), 1);
+  match.pass(s.Condition(function (x) { return x < 0; }), -1);
 });
 
 suite('meta info');
@@ -66,7 +81,7 @@ if (0) {
                             s.Condition(function (value) { return true; }).label('i am always true')).label('third or'));
     var match = schema.test(7);
 
-    console.log(s.formatTrace(match.trace));
+    console.log(match.backtrace());
 
     assert(match.trace, 'missing trace result');
     assert(match.trace[0].schema == schema, 'schema not in trace result');
@@ -80,34 +95,6 @@ var minus = s.Condition(function (x) { return x < 0;  }).label('a negatvie integ
 var zero = s.Constant(0);
 var four = s.Constant(4);
 var three = s.Constant(3);
-
-var _test = function (schema, value) {
-  var test = schema.test(value);
-  test.logTrace = function () {
-    console.log(s.formatTrace(test.trace));
-  };
-  return test;
-};
-
-var _msg = function (schema, value, message) {
-  return message || (JSON.stringify(schema) + ' on ' + JSON.stringify(value));
-};
-
-var match = { };
-
-match.fail = function (schema, value, message) {
-  var test = _test(schema, value);
-  if (test.match != false) { test.logTrace(); }
-  assert.notOk(test.match, _msg(schema, value, message));
-  return test;
-};
-
-match.pass = function (schema, value, message) {
-  var test = _test(schema, value);
-  if (test.match != true) { test.logTrace(); }
-  assert.ok(test.match, _msg(schema, value, message));
-  return test;
-};
 
 test('any schemas work', function () {
   var schema = s.Any([plus, minus]).label('plus or minus');
@@ -124,12 +111,12 @@ test('any schemas work', function () {
 test('every schemas work', function () {
   var schema = s.Every([ plus, four ]);
 
-  assert(schema.test(4).match == true);
-  assert(schema.test(1).match == false);
-  assert(schema.test(0).match == false);
-  assert(schema.test(-1).match == false);
+  match.pass(schema, 4);
+  match.fail(schema, 1);
+  match.fail(schema, 0);
+  match.fail(schema, -1);
 
-  assert(s.Every([]).test(undefined).match == true);
+  match.pass(s.Every([]), undefined);
 });
 
 test('backtracking1', function () {
@@ -137,30 +124,29 @@ test('backtracking1', function () {
                        s.Every([minus, four]),
                        s.Every([zero]) ]);
 
-  assert(schema.test( 4).match == true);
-  assert(schema.test( 0).match == true);
-  assert(schema.test( 3).match == false);
-  assert(schema.test(-1).match == false);
+  match.pass(schema,  4);
+  match.pass(schema,  0);
+  match.fail(schema,  3);
+  match.fail(schema, -1);
 });
 
 test('backtracking2', function () {
   var schema = s.And(s.Or(minus, three),
                      s.Or(three));
 
-  assert(schema.test( 4).match == false);
-  assert(schema.test( 3).match == true);
-  //console.log(s.formatTrace(schema.test(3).trace));
-  assert(schema.test(-1).match == false);
+  match.fail(schema,  4);
+  match.pass(schema,  3);
+  match.fail(schema, -1);
 });
 
 test('OfType', function () {
   var schema = s.And(s.Or(minus, three),
                      s.Or(three));
 
-  assert(schema.test( 4).match == false);
-  assert(schema.test( 3).match == true);
+  match.fail(schema, 4);
+  match.pass(schema, 3);
   //console.log(s.formatTrace(schema.test(3).trace));
-  assert(schema.test(-1).match == false);
+  match.fail(schema, -1);
 });
 
 test('Nullable', function () {
@@ -229,6 +215,21 @@ test('object', function () {
 
 });
 
+test('enum', function () {
+  match.fail(s.Enum(), null);
+  match.fail(s.Enum(), 'a');
+
+  var o = { };
+  match.fail(s.Enum(o), 'a');
+  match.pass(s.Enum(o), o);
+
+  match.pass(s.Enum('a', o, 42), o);
+  match.pass(s.Enum('a', o, 42), 'a');
+  match.pass(s.Enum('a', o, 42), 42);
+  match.fail(s.Enum('a', o, 42), NaN);
+});
+
+
 test('OfType', function () {
   match.pass(s.Boolean(), true);
   match.pass(s.Boolean(), false);
@@ -238,6 +239,21 @@ test('OfType', function () {
   match.pass(s.Number(), NaN);
   match.pass(s.Number(), 0);
   match.pass(s.Number(), 1.17);
+});
+
+test('array', function () {
+  match.pass(s.Array(s.Integer()), [ ]);
+  match.pass(s.Array(s.Integer()), [ 1 ]);
+  match.pass(s.Array(s.Integer()), [ 1, 2 ]);
+  match.fail(s.Array(s.Integer()), [ 'q' ]);
+  match.fail(s.Array(s.Integer()), [ 1, 'q' ]);
+  match.fail(s.Array(s.Integer()), [ 1, 'q', 2 ]);
+  match.fail(s.Array(s.Integer(), s.GreaterThan(0)), [ ]);
+  match.pass(s.Array(s.Integer(), s.GreaterThan(0)), [ 1 ]);
+  match.pass(s.Array(s.Integer(), s.GreaterThan(0)), [ 1, 2, 3 ]);
+  match.pass(s.Array(s.Integer(), s.GreaterThan(2)), [ 1, 2, 3 ]);
+  match.fail(s.Array(s.Array(s.Pass()), s.GreaterThan(0)), [ ]);
+  match.pass(s.Array(s.Array(s.Pass()), s.GreaterThan(0)), [ [ ], [ ] ]);
 });
 
 test('tuple', function () {
