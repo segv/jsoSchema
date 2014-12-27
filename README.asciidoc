@@ -33,7 +33,7 @@ var test = schema.test(foo)
 if (test.match) {
    console.log('foo is a positive integer or a string');
 } else {
-   console.log('foo is a positive integer nor a string');
+   console.log('foo is not a positive integer nor a string');
    console.log('failed because:', test.backtrace());
 }
 ----
